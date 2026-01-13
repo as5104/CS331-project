@@ -1,2 +1,2 @@
 python>=3.10
-typing-extensions>=4.0
+typing-extensions>=3.0
