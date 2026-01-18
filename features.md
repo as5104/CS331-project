@@ -5,10 +5,9 @@
 
 ## 1. Project Overview
 
-The **University Administrative Automation Platform** is a multi-tenant SaaS-based system designed to automate end-to-end administrative processes of colleges and universities.  
-Each institution (tenant) can register on the platform, manage its own users (students, faculty, administrators), configure workflows, and run academic administrative processes in a structured, automated, and measurable manner.
+The **University Administrative Automation Platform** is a SaaS-based system designed to automate end-to-end administrative processes of colleges and universities.
 
-The platform focuses on **business process automation (BPA)** rather than teaching or content delivery. It orchestrates people, documents, rules, and approvals across departments while maintaining transparency, auditability, and continuous improvement using analytics and AI.
+The platform focuses on **business process automation (BPA)** rather than teaching or content delivery.
 
 ---
 
@@ -28,9 +27,8 @@ This platform qualifies as a full BPA system because it:
 
 ## 3. Business Model
 
-- **Type:** Multi-tenant SaaS  
+- **Type:** SaaS  
 - **Customers:** Colleges and Universities  
-- **Tenant Isolation:** Each institution manages its own data, users, and workflows  
 - **Onboarding Model:**  
   - Student profiles are manually created during admission  
   - Faculty profiles are manually created during hiring  
@@ -41,7 +39,7 @@ This platform qualifies as a full BPA system because it:
 
 ## 4. Platform Flow (Initial)
 
-1. Institution registers on the platform (tenant creation)
+1. Institution registers on the platform
 2. Admin manually creates student and faculty profiles (single or bulk)
 3. Users log in using institution-issued credentials
 4. Role-based dashboard is loaded
@@ -89,7 +87,6 @@ This platform qualifies as a full BPA system because it:
 - Override assignments when needed
 - View audit logs and reports
 - Run optimization and simulation tools
-- Manage tenant-level settings and branding
 
 ---
 
@@ -151,7 +148,6 @@ Student Request :
 - Human task management
 - Conditional branching and loops
 - Manual override with audit trail
-- Configurable per institution
 
 ---
 
@@ -200,17 +196,7 @@ Student Request :
 
 ---
 
-## 11. Security & Compliance (Initial)
-
-- Role-Based Access Control (RBAC)
-- Tenant data isolation
-- Audit logs for sensitive actions
-- Secure file handling
-- Configurable data retention policies
-
----
-
-## 12. Conclusion
+## 11. Conclusion
 
 This platform provides a scalable and extensible foundation for automating university administrative operations. By combining workflow automation, human approvals, analytics, and AI-assisted optimization, it demonstrates a **true end-to-end business process automation system** tailored for academic institutions.
 
