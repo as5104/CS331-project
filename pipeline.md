@@ -14,7 +14,7 @@
 🎯 **Purpose:** Collect applicant data
 
 **Inputs:**
-- 🧑 Personal Info (Name, DOB, Address)
+- 🧑 Personal Info (Name, DOB, Addressess)
 - 💼 Employment Details
 - 💰 Income & Expenses
 - 🏦 Bank Account Info
