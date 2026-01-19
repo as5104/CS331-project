@@ -4,7 +4,7 @@
 
 ## 1. Requirement Analysis
 
-The project begins with a thorough understanding of stakeholder needs.
+The project begins with a thorough understanding of stakeholders' need.
 
 **Key Stakeholders**
 - Students  
