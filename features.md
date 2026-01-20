@@ -59,10 +59,10 @@ This platform qualifies as a full BPA system because it:
 - Submit project reports and documents
 - Apply for exam re-evaluation
 - Submit leave / attendance exception requests
-- View application status with timeline
-- Respond to revision requests
-- Download generated certificates or documents
+- Attendance
+- CGPA Cal
 - Receive notifications and reminders
+- ...
 
 ---
 
