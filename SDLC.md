@@ -9,7 +9,7 @@ The project begins with a thorough understanding of stakeholders' need.
 **Key Stakeholders**
 - Students  
 - Faculty  
-- Administrators  
+- Administrators/Admins
 
 **Identified Functional Requirements**
 - Role-based authentication and login  
