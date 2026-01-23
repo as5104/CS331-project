@@ -31,7 +31,7 @@ subgraph Portal [University]
   MessageStudents((Message Students))
   GenerateReports((Generate Reports))
 
-  ManageUsers((Manage Users))
+  ManageUsers((Manage all Users))
   AssignRoles((Assign Roles & Permissions))
   ManageCourses((Manage Courses & Departments))
   PublishAnnouncements((Publish Announcements))
