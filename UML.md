@@ -7,7 +7,7 @@ Faculty([Faculty])
 Admin([Admin])
 
 %% System Boundary
-subgraph Portal [University]
+subgraph UniPortal [University]
 
   Login((Login))
   Signup((Signup))
