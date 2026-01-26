@@ -62,44 +62,39 @@ This platform qualifies as a full BPA system because it:
 - Attendance
 - CGPA Cal
 - Receive notifications and reminders
-- ...
 
 ---
 
 ### 5.2 Faculty Dashboard
 
-- View assigned reviews and approvals
-- Review submissions (approve / request revision)
-- Provide comments and grades
-- Track workload and pending tasks
-- Accept or request reassignment of cases
-- View deadlines and SLA indicators
-- Calendar export of assigned tasks
+- View assigned tasks and review submissions (approve / request revision)
+- Evaluation / provide marks, grades and feedback
+- Course management (assigned courses, faculty)
+- Upload lecture notes and materials/ assignments
+- Mark attendance
 
 ---
 
 ### 5.3 Admin Dashboard (Department / Institution)
 
-- Manual onboarding of students and faculty
+- Onboarding of students and faculty
 - Configure workflows and approval rules
 - Define SLA and escalation policies
-- Monitor process KPIs and bottlenecks
-- Override assignments when needed
-- View audit logs and reports
-- Run optimization and simulation tools
+- Manage records
+- Assign RBAC and permissions
+- System monitoring
+- Publish announcements
 
 ---
 
 ## 6. Core Automation Processes (Initial Scope)
 
-### 1. Project Submission Workflow (Core)
+### 1. Assignment Submission Workflow (Core)
 Student Submission :
-- Smart Validation
+- Validation
 - Supervisor Assignment
 - Faculty Review
 - Revision (if required)
-- Admin Approval
-- Certificate Generation
 
 ---
 
@@ -120,79 +115,12 @@ Student Request :
 
 ---
 
-### 4. Document & Certificate Generation
-- Automatic PDF generation after approvals
-- Transcript, project completion, or eligibility certificates
-- Template-based formatting
-
----
-
-## 7. Intelligent & AI-Assisted Features (Initial)
-
-- **AI Academic Advisor**
-  - Academic risk detection
-  - Personalized recommendations
-- **Smart Document Validation**
-  - File format, page count, metadata checks
-  - Duplicate / similarity detection (stub initially)
-- **Explainable Recommendations**
-  - Human-readable justification for AI decisions
-- **Exception Triage**
-  - Automatic routing of special cases
-
----
-
 ## 8. Workflow & Rule Engine
 
 - Rule-based workflow execution
 - Human task management
 - Conditional branching and loops
 - Manual override with audit trail
-
----
-
-## 9. Analytics & Observability
-
-- Structured event logging (case_id, activity, actor, timestamp)
-- KPI dashboards:
-  - Average completion time
-  - SLA violations
-  - Throughput
-  - Faculty workload distribution
-- Process mining support for:
-  - Bottleneck detection
-  - Conformance checking
-  - Continuous improvement
-
----
-
-## 10. Initial Tech Stack (Flexible)
-
-### Frontend
-- React (Next.js)
-- Tailwind CSS
-
-### Backend
-- FastAPI (Python)
-- REST-based APIs
-
-### Workflow & Background Tasks
-- Redis + Celery / RQ
-- (Temporal as a future upgrade)
-
-### Database & Storage
-- PostgreSQL (users, cases, events)
-- Object storage (Local / MinIO / S3)
-
-### AI & Analytics
-- PM4Py (Process Mining)
-- scikit-learn / PyTorch
-- pyswarms (PSO optimization)
-
-### DevOps & Infrastructure
-- Docker & Docker Compose
-- GitHub Actions (CI/CD)
-- HTTPS & JWT-based authentication
 
 ---
 
