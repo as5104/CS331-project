@@ -6,7 +6,7 @@
 
 The project begins with a thorough understanding of stakeholders' need.
 
-**Key Stakeholders**
+**Key Stakeholder**
 - Students  
 - Faculty  
 - Administrators/Admins
