@@ -1,0 +1,7 @@
+ACTORS :
+
+1. Student
+2. Faculty
+3. Admin
+4. Authentication Service (External)
+5. Document Storage (S3 or other) (External)
