@@ -5,3 +5,52 @@ ACTORS :
 3. Admin
 4. Authentication Service (External)
 5. Document Storage (S3 or other) (External)
+
+
+USE CASES :
+
+The major use cases of the system are as follows:
+
+1. Login
+2. View Dashboard
+
+STUDENT USE CASES
+
+1. View Profile & Academic Details
+2. Submit Assignment
+   - includes: Validate Assignment
+   - includes: Assign Supervisor
+3. Apply for Exam Re-evaluation
+   - includes: Eligibility Check
+   - includes: Assign Reviewer
+   - includes: Update Grade
+4. Submit Leave / Attendance Request
+   - includes: Date & Rule Validation
+   - includes: Approve Leave / Attendance
+   - includes: Update Attendance Record
+5. View Attendance
+6. Calculate CGPA
+7. Receive Notifications
+
+
+FACULTY USE CASES
+
+1. View Assigned Tasks
+2. Review Assignment
+   - extends: Request Revision
+3. Evaluate & Assign Marks
+4. Manage Courses
+5. Upload Study Material / Assignments
+   - includes: Store Documents
+6. Mark Attendance
+
+
+ADMIN USE CASES
+
+1. Onboard Students & Faculty
+2. Configure Workflows & Rules
+3. Define SLA & Escalation Policies
+4. Manage Records
+5. Assign Roles & Permissions
+6. System Monitoring
+7. Publish Announcements
