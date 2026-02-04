@@ -15,9 +15,9 @@ Document Storage (external)
 Student ↔ System
 Login credentials
 Assignment submissions
-Leave / attendance requests
+Leave/attendance requests
 Re-evaluation requests
-Academic data / CGPA / attendance
+Academic data (CGPA/attendance_
 Notifications
 
 Faculty ↔ System
