@@ -4,7 +4,7 @@ flowchart LR
     Student[Student]
     Faculty[Faculty]
     Admin[Admin]
-    Auth["Authentication Service"]
+    Auth["Authentication Services"]
 
     %% Processes
     P1(("1.0 User Authentication"))
