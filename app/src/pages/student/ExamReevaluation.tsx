@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { mockCourses, mockReevaluationRequests } from '@/data/mockData';
+import { mockReevaluationRequests } from '@/data/mockData';
+import { useAuth } from '@/context/AuthContext';
+import type { Student } from '@/types';
 import {
   CheckCircle2,
   Clock,
@@ -19,6 +21,10 @@ interface ExamReevaluationProps {
 const steps = ['Select Course', 'Enter Details', 'Review & Submit'];
 
 export function ExamReevaluation({ onNavigate }: ExamReevaluationProps) {
+  const { user } = useAuth();
+  const studentCourses = Array.isArray((user as Student | null)?.courses)
+    ? (user as Student).courses
+    : [];
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [examType, setExamType] = useState<string>('');
@@ -27,7 +33,7 @@ export function ExamReevaluation({ onNavigate }: ExamReevaluationProps) {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [previousRequests, setPreviousRequests] = useState(mockReevaluationRequests);
 
-  const selectedCourseData = mockCourses.find(c => c.id === selectedCourse);
+  const selectedCourseData = studentCourses.find((c: any) => c.id === selectedCourse);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -190,7 +196,7 @@ export function ExamReevaluation({ onNavigate }: ExamReevaluationProps) {
                 <div>
                   <label className="block text-sm font-medium mb-2">Course *</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {mockCourses.map((course) => (
+                    {studentCourses.map((course: any) => (
                       <button
                         key={course.id}
                         onClick={() => setSelectedCourse(course.id)}

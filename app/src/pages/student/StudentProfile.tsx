@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { mockCourses } from '@/data/mockData';
 import {
   User,
   Mail,
@@ -12,11 +11,8 @@ import {
   BookOpen,
   GraduationCap,
   Award,
-  Edit3,
-  Save,
   CheckCircle2,
   Clock,
-  X,
 } from 'lucide-react';
 
 interface StudentProfileProps {
@@ -24,12 +20,10 @@ interface StudentProfileProps {
 }
 
 export function StudentProfile({ onNavigate }: StudentProfileProps) {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const student = user as any;
+  const studentCourses = Array.isArray(student?.courses) ? student.courses : [];
   const [activeTab, setActiveTab] = useState<'personal' | 'academic'>('personal');
-  const [isEditing, setIsEditing] = useState(false);
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [showMoreAvatars, setShowMoreAvatars] = useState(false);
 
   const academicHistory = [
     { semester: 'Semester 1', sgpa: 8.2, credits: 20, status: 'completed' },
@@ -48,23 +42,6 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
-  };
-
-  const avatarOptions = useMemo(() => {
-    const base = 'https://api.dicebear.com/9.x/dylan/svg?seed=';
-    const primarySeeds = ['Dylan-A', 'Dylan-B', 'Dylan-C', 'Dylan-D', 'Dylan-E', 'Dylan-F'];
-    const extraSeeds = ['Dylan-G', 'Dylan-H', 'Dylan-I', 'Dylan-J', 'Dylan-K', 'Dylan-L'];
-    const seeds = showMoreAvatars ? [...primarySeeds, ...extraSeeds] : primarySeeds;
-    const urls = seeds.map(seed => `${base}${encodeURIComponent(seed)}`);
-    if (student?.avatar) {
-      urls.unshift(student.avatar);
-    }
-    return Array.from(new Set(urls));
-  }, [showMoreAvatars, student?.avatar]);
-
-  const handleAvatarSelect = (url: string) => {
-    updateUser({ avatar: url });
-    setShowAvatarPicker(false);
   };
 
   return (
@@ -87,12 +64,6 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
               alt={student?.name}
               className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl border-4 border-white/30 shadow-xl"
             />
-            <button
-              onClick={() => setShowAvatarPicker(true)}
-              className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg"
-            >
-              <Edit3 className="w-4 h-4 text-primary" />
-            </button>
           </motion.div>
           
           <div className="flex-1 text-center sm:text-left">
@@ -129,64 +100,6 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
         </div>
       </motion.div>
 
-      {showAvatarPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="w-full max-w-xl bg-card rounded-2xl border border-border shadow-xl p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Change Profile Photo</h3>
-                <p className="text-sm text-muted-foreground">Choose a new avatar</p>
-              </div>
-              <button
-                onClick={() => setShowAvatarPicker(false)}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
-              {avatarOptions.map((url) => (
-                <button
-                  key={url}
-                  onClick={() => handleAvatarSelect(url)}
-                  className={`
-                    p-2 rounded-xl border transition-all
-                    ${student?.avatar === url ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40 hover:bg-muted/40'}
-                  `}
-                >
-                  <img
-                    src={url}
-                    alt="Avatar option"
-                    className="w-full aspect-square rounded-lg"
-                  />
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between mt-5">
-              <button
-                onClick={() => setShowMoreAvatars(prev => !prev)}
-                className="text-sm text-primary hover:underline"
-              >
-                {showMoreAvatars ? 'Show fewer options' : 'Show more options'}
-              </button>
-              <button
-                onClick={() => setShowAvatarPicker(false)}
-                className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                Done
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-border">
         {[
@@ -220,29 +133,22 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
         {activeTab === 'personal' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Personal Information */}
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="bg-card rounded-xl border border-border p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" />
-                  Personal Information
-                </h3>
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
-                >
-                  {isEditing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-                  {isEditing ? 'Save' : 'Edit'}
-                </button>
-              </div>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="bg-card rounded-xl border border-border p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                Personal Information
+              </h3>
+            </div>
 
-              <div className="space-y-4">
-                {[
-                  { label: 'Full Name', value: student?.name, icon: User },
+            <div className="space-y-4">
+              {[
+                { label: 'Full Name', value: student?.name, icon: User },
                   { label: 'Email', value: student?.email, icon: Mail },
                   { label: 'Phone', value: '+1 (555) 123-4567', icon: Phone },
                   { label: 'Date of Birth', value: '2002-05-15', icon: Calendar },
@@ -256,20 +162,12 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
                     <field.icon className="w-5 h-5 text-muted-foreground" />
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground">{field.label}</p>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          defaultValue={field.value}
-                          className="w-full mt-1 px-2 py-1 text-sm border border-border rounded bg-card"
-                        />
-                      ) : (
-                        <p className="font-medium text-sm">{field.value}</p>
-                      )}
+                      <p className="font-medium text-sm">{field.value}</p>
                     </div>
                   </motion.div>
                 ))}
-              </div>
-            </motion.div>
+            </div>
+          </motion.div>
 
             {/* Emergency Contact */}
             <motion.div
@@ -318,7 +216,7 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
                 Current Semester Courses
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {mockCourses.map((course, index) => (
+                {studentCourses.map((course: any, index: number) => (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, scale: 0.95 }}

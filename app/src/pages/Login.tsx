@@ -58,7 +58,8 @@ export function Login({ onLogin }: LoginProps) {
       await login(email, password, selectedRole);
       onLogin();
     } catch (err) {
-      setError('Invalid credentials. Please try again.');
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(message);
     }
   };
 
@@ -289,7 +290,7 @@ export function Login({ onLogin }: LoginProps) {
                       className="p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-red-500/20 border border-red-500/30 text-red-200 text-xs sm:text-sm flex items-center gap-2"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                      <span className="truncate">{error}</span>
+                      <span className="break-words">{error}</span>
                     </motion.div>
                   )}
 

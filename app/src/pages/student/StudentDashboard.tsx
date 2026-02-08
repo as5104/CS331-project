@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { StatCard } from '@/components/shared/StatCard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { mockAssignments, mockNotifications, mockCourses } from '@/data/mockData';
+import { mockAssignments, mockNotifications } from '@/data/mockData';
 import {
   GraduationCap,
   Calendar,
@@ -25,6 +25,7 @@ interface StudentDashboardProps {
 export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
   const { user } = useAuth();
   const student = user as any;
+  const studentCourses = Array.isArray(student?.courses) ? student.courses : [];
   const [activeTab, setActiveTab] = useState('all');
 
   const pendingAssignments = mockAssignments.filter(a => a.status === 'pending');
@@ -127,7 +128,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
             </div>
             <div className="p-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {mockCourses.slice(0, 4).map((course, index) => (
+                {studentCourses.slice(0, 4).map((course: any, index: number) => (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, scale: 0.95 }}

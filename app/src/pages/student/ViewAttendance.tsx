@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { mockCourses } from '@/data/mockData';
 import {
   Calendar,
   CheckCircle2,
@@ -45,16 +44,16 @@ const generateAttendanceData = (year: number, month: number) => {
   return data;
 };
 
-const courseAttendance = mockCourses.map(course => ({
-  ...course,
-  present: Math.floor(Math.random() * 10) + 35,
-  absent: Math.floor(Math.random() * 5),
-  late: Math.floor(Math.random() * 3),
-}));
-
 export function ViewAttendance({ onNavigate }: ViewAttendanceProps) {
   const { user } = useAuth();
   const student = user as any;
+  const studentCourses = Array.isArray(student?.courses) ? student.courses : [];
+  const courseAttendance = studentCourses.map((course: any) => ({
+    ...course,
+    present: Math.floor(Math.random() * 10) + 35,
+    absent: Math.floor(Math.random() * 5),
+    late: Math.floor(Math.random() * 3),
+  }));
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const year = currentDate.getFullYear();
@@ -219,7 +218,7 @@ export function ViewAttendance({ onNavigate }: ViewAttendanceProps) {
             </h3>
             
             <div className="space-y-4">
-              {courseAttendance.map((course, index) => (
+              {courseAttendance.map((course: any, index: number) => (
                 <motion.div
                   key={course.id}
                   initial={{ opacity: 0, y: 10 }}

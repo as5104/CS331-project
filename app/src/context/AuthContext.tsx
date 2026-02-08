@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import type { User, UserRole, Student, Faculty, Admin } from '@/types';
 
 interface AuthContextType {
@@ -12,27 +13,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user data
+// Mock user data (faculty/admin remain local only)
 const mockUsers: Record<string, User> = {
-  'student@university.edu': {
-    id: 'STU001',
-    email: 'student@university.edu',
-    name: 'Arijit Sen',
-    role: 'student',
-    avatar: 'https://api.dicebear.com/9.x/dylan/svg?seed=Alex',
-    department: 'Computer Science',
-    institution: 'Tech University',
-    rollNumber: 'CS2021001',
-    program: 'B.Tech Computer Science',
-    semester: 6,
-    cgpa: 8.5,
-    attendance: 87,
-    courses: [
-      { id: 'CSE301', code: 'CSE301', name: 'Data Structures', credits: 4, progress: 75, grade: 'A', attendance: 90 },
-      { id: 'CSE302', code: 'CSE302', name: 'Database Systems', credits: 3, progress: 60, grade: 'B+', attendance: 85 },
-      { id: 'CSE303', code: 'CSE303', name: 'Computer Networks', credits: 4, progress: 80, grade: 'A-', attendance: 88 },
-    ],
-  } as Student,
   'faculty@university.edu': {
     id: 'FAC001',
     email: 'faculty@university.edu',
@@ -51,7 +33,7 @@ const mockUsers: Record<string, User> = {
   'admin@university.edu': {
     id: 'ADM001',
     email: 'admin@university.edu',
-    name: 'Ankit Sarkar',
+    name: 'Arijit Sen',
     role: 'admin',
     avatar: 'https://api.dicebear.com/9.x/dylan/svg?seed=Michael',
     department: 'Administration',
@@ -61,62 +43,108 @@ const mockUsers: Record<string, User> = {
   } as Admin,
 };
 
+const studentEmails = new Set([
+  'ananya.student@university.edu',
+  'rohan.student@university.edu',
+]);
+
+function mapStudentRow(row: any): Student {
+  return {
+    id: row.auth_user_id ?? row.id,
+    email: row.email,
+    name: row.name,
+    role: 'student',
+    avatar: row.avatar ?? undefined,
+    department: row.department ?? undefined,
+    institution: row.institution ?? undefined,
+    rollNumber: row.roll_number,
+    program: row.program ?? '',
+    semester: Number(row.semester) || 0,
+    cgpa: Number(row.cgpa) || 0,
+    attendance: Number(row.attendance) || 0,
+    courses: Array.isArray(row.courses) ? row.courses : [],
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = useCallback(async (email: string, _password: string, role: UserRole) => {
+  const login = useCallback(async (email: string, password: string, role: UserRole) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const mockUser = mockUsers[email];
-    if (mockUser && mockUser.role === role) {
-      setUser(mockUser);
-    } else {
-      // Create a new mock user if not found
-      const newUser: User = {
-        id: 'USR' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-        email,
-        name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
-        role,
-        avatar: `https://api.dicebear.com/9.x/dylan/svg?seed=${email}`,
-        department: 'Computer Science',
-        institution: 'Tech University',
-      };
-      
+    try {
       if (role === 'student') {
-        (newUser as Student).rollNumber = 'CS2021' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        (newUser as Student).program = 'B.Tech Computer Science';
-        (newUser as Student).semester = 6;
-        (newUser as Student).cgpa = 8.2;
-        (newUser as Student).attendance = 85;
-        (newUser as Student).courses = [
-          { id: 'CSE301', code: 'CSE301', name: 'Data Structures', credits: 4, progress: 75 },
-          { id: 'CSE302', code: 'CSE302', name: 'Database Systems', credits: 3, progress: 60 },
-        ];
-      } else if (role === 'faculty') {
-        (newUser as Faculty).employeeId = 'EMP2015' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        (newUser as Faculty).designation = 'Assistant Professor';
-        (newUser as Faculty).courses = [
-          { id: 'CSE301', code: 'CSE301', name: 'Data Structures', credits: 4 },
-        ];
+        if (email in mockUsers) {
+          throw new Error('This email is not allowed for student login.');
+        }
+        // Supabase auth for students
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (authError || !authData.session) {
+          // Surface auth reason during dev (e.g., email not confirmed)
+          throw new Error(authError?.message || 'Student does not exist or password is incorrect.');
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('students')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (profileError || !profile) {
+          throw new Error('Student profile not found. Please contact admin.');
+        }
+
+        setUser(mapStudentRow(profile));
       } else {
-        (newUser as Admin).employeeId = 'EMP2010' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        (newUser as Admin).permissions = ['users.manage', 'workflows.configure', 'system.monitor'];
+        if (studentEmails.has(email)) {
+          const roleName = role === 'faculty' ? 'faculty' : 'admin';
+          throw new Error(`This email is not allowed for ${roleName} login.`);
+        }
+        // Keep faculty/admin on local mock data
+        const mockUser = mockUsers[email];
+        if (mockUser && mockUser.role === role) {
+          setUser(mockUser);
+        } else {
+          const roleName = role === 'faculty' ? 'Faculty' : 'Admin';
+          throw new Error(`${roleName} account not found.`);
+        }
       }
-      
-      setUser(newUser);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const logout = useCallback(() => {
+    // Best-effort sign out from Supabase; safe for non-students
+    supabase.auth.signOut().catch(() => {});
     setUser(null);
   }, []);
 
   const updateUser = useCallback((updates: Partial<User>) => {
     setUser(prev => (prev ? { ...prev, ...updates } : prev));
+  }, []);
+
+  // Restore student session if present
+  useEffect(() => {
+    const restoreSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const email = data.session?.user?.email;
+      if (email) {
+        const { data: profile } = await supabase
+          .from('students')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+        if (profile) {
+          setUser(mapStudentRow(profile));
+        }
+      }
+    };
+    restoreSession();
   }, []);
 
   return (
