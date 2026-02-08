@@ -10,8 +10,8 @@ import { LeaveRequest } from '@/pages/student/LeaveRequest';
 import { ViewAttendance } from '@/pages/student/ViewAttendance';
 import { CGPACalculator } from '@/pages/student/CGPACalculator';
 import { Notifications } from '@/pages/student/Notifications';
-import { FacultyDashboard } from '@/pages/faculty/FacultyDashboard';
-import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+// import { FacultyDashboard } from '@/pages/faculty/FacultyDashboard';
+// import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import type { UserRole } from '@/types';
 
