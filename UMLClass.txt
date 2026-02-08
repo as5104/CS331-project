@@ -167,3 +167,34 @@ Attributes:
 
 Methods:
 + sendNotification() : void
+
+
+10. Inheritance
+• Student inherits from User
+• Faculty inherits from User
+• Admin inherits from User
+
+11. Association Relationships
+User - Notification
+• Type: Association
+• Meaning: User receives notifications
+• Multiplicity: One User → Many Notifications (1 : 0..*)
+Faculty - Assignment
+• Type: Association
+• Meaning: Faculty reviews assignments
+Faculty - ReEvaluationRequest
+• Type: Association
+• Meaning: Faculty evaluates reevaluation requests
+Student - Assignment
+• Type: Association
+• Meaning: Student submits assignments
+Student - ReEvaluationRequest
+• Type: Association
+• Meaning: Student raises reevaluation requests
+12. Aggregation / Composition
+Assignment — Document
+• Type: Composition (Strong containment)
+• Meaning: Assignment contains documents
+Student — Attendance
+• Type: Association (can also be treated as aggregation logically)
+• Meaning: Student has attendance record
