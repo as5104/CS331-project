@@ -1,28 +1,45 @@
-import { Box, Container, Grid } from '@mui/material';
-import { ReactNode } from 'react';
-import DashboardHeader from './Header';
-import DashboardSidebar from './Sidebar';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Sidebar } from './Sidebar';
+import { Header } from './Header';
 
 interface DashboardLayoutProps {
-    children: ReactNode;
+  children: React.ReactNode;
+  title: string;
+  activePath: string;
+  onNavigate: (path: string) => void;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-    return (
-        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-            <DashboardSidebar />
-            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <DashboardHeader />
-                <Container sx={{ mt: 4, mb: 4 }}>
-                    <Grid container spacing={3}>
-                        <Grid item xs={12}>
-                            {children}
-                        </Grid>
-                    </Grid>
-                </Container>
-            </Box>
-        </Box>
-    );
-}
+export function DashboardLayout({ children, title, activePath, onNavigate }: DashboardLayoutProps) {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-export default DashboardLayout;
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Sidebar
+        activePath={activePath}
+        onNavigate={onNavigate}
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={() => setIsMobileSidebarOpen(false)}
+      />
+      
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header
+          title={title}
+          onNavigate={onNavigate}
+          onMenuClick={() => setIsMobileSidebarOpen(true)}
+        />
+        
+        <motion.main
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          className="flex-1 p-4 lg:p-6 overflow-auto"
+        >
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </motion.main>
+      </div>
+    </div>
+  );
+}
