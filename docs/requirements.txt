@@ -1,0 +1,25 @@
+# Runtime
+Node.js>=18                         # JavaScript runtime for Vite + React
+npm>=9                              # Package manager
+
+# Frontend
+React>=19                           # UI framework for Student / Faculty / Admin dashboards
+TypeScript>=5.9                     # Type safety across the app
+Vite>=7                             # Build tool + dev server
+
+# Styling & UI
+Tailwind CSS>=3.4                   # Utility-first styling
+tailwindcss-animate>=1.0            # Animation utilities
+
+# Data & Forms
+React Hook Form>=7.70               # Form handling
+
+# Database
+PostgreSQL>=11.5              
+
+# Backend-as-a-Service
+Supabase JS>=2                      # Auth + database access (students)
+
+# Development Tools
+ESLint>=9                           # Linting for TS/React
+PostCSS>=8                          # CSS processing for Tailwind
