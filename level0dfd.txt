@@ -1,0 +1,11 @@
+flowchart LR
+
+Student([Student])
+Faculty([Faculty])
+Admin([Admin])
+
+System((University Administration Platform))
+
+Student --- System
+Faculty --- System
+Admin --- System
