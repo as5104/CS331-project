@@ -1,0 +1,200 @@
+Assignment 3
+
+Part B : 
+Q1. Identify the key classes involved in your software. Name the classes
+and identify each class's attributes and functionalities (methods).
+Mention the visibility (public, private, protected) of the attributes
+as well as the functions (methods) of each class.
+
+
+1. User (Abstract Class)
+
+Description:
+The User class represents a generic system user. It is a base class
+from which Student, Faculty, and Admin are derived.
+
+Attributes:
++ userId : String
++ name : String
++ email : String
+- password : String
++ role : String
+
+Methods:
++ login() : boolean
++ logout() : void
++ viewDashboard() : void
+
+
+2. Student (Inherits User)
+
+Description:
+The Student class represents a student who interacts with the system
+to perform academic and administrative activities.
+
+Attributes:
++ rollNo : String
++ department : String
++ cgpa : float
+
+Methods:
++ submitAssignment() : void
++ applyForReevaluation() : void
++ submitLeaveRequest() : void
++ viewAttendance() : void
++ calculateCGPA() : float
+
+
+3. Faculty (Inherits User)
+
+Description:
+The Faculty class represents faculty members responsible for evaluating
+assignments, managing courses, and marking attendance.
+
+Attributes:
++ facultyId : String
++ department : String
+
+Methods:
++ reviewAssignment() : void
++ evaluateAssignment() : void
++ assignMarks() : void
++ manageCourses() : void
++ markAttendance() : void
++ uploadStudyMaterial() : void
+
+
+4. Admin (Inherits User)
+
+Description:
+The Admin class represents the administrative authority responsible
+for managing and monitoring the system.
+
+Attributes:
++ adminId : String
+
+Methods:
++ onboardUser() : void
++ configureWorkflow() : void
++ defineSLA() : void
++ manageRecords() : void
++ assignRoles() : void
++ monitorSystem() : void
++ publishAnnouncement() : void
+
+
+5. Assignment
+
+Description:
+The Assignment class represents student assignment submissions
+and their evaluation details.
+
+Attributes:
++ assignmentId : String
++ title : String
++ submissionDate : Date
++ status : String
++ grade : float
+
+Methods:
++ validateAssignment() : boolean
++ assignSupervisor() : void
++ updateStatus() : void
+
+
+6. ReEvaluationRequest
+
+Description:
+The ReEvaluationRequest class represents exam re-evaluation requests
+raised by students.
+
+Attributes:
++ requestId : String
++ subject : String
++ currentGrade : float
++ updatedGrade : float
++ status : String
+
+Methods:
++ checkEligibility() : boolean
++ assignReviewer() : void
++ updateGrade() : void
+
+
+7. Attendance
+
+Description:
+The Attendance class stores and manages attendance information
+of students.
+
+Attributes:
++ attendanceId : String
++ totalClasses : int
++ presentCount : int
+
+Methods:
++ updateAttendance() : void
++ calculateAttendancePercentage() : float
+
+
+8. Document
+
+Description:
+The Document class represents files uploaded or generated within
+the system.
+
+Attributes:
++ documentId : String
++ fileName : String
++ fileType : String
++ filePath : String
+
+Methods:
++ uploadDocument() : void
++ downloadDocument() : void
+
+
+9. Notification
+
+Description:
+The Notification class represents system-generated notifications
+sent to users.
+
+Attributes:
++ notificationId : String
++ message : String
++ timestamp : Date
+
+Methods:
++ sendNotification() : void
+
+
+10. Inheritance
+• Student inherits from User
+• Faculty inherits from User
+• Admin inherits from User
+
+11. Association Relationships
+User - Notification
+• Type: Association
+• Meaning: User receives notifications
+• Multiplicity: One User → Many Notifications (1 : 0..*)
+Faculty - Assignment
+• Type: Association
+• Meaning: Faculty reviews assignments
+Faculty - ReEvaluationRequest
+• Type: Association
+• Meaning: Faculty evaluates reevaluation requests
+Student - Assignment
+• Type: Association
+• Meaning: Student submits assignments
+Student - ReEvaluationRequest
+• Type: Association
+• Meaning: Student raises reevaluation requests
+12. Aggregation / Composition
+Assignment — Document
+• Type: Composition (Strong containment)
+• Meaning: Assignment contains documents
+Student — Attendance
+• Type: Association (can also be treated as aggregation logically)
+• Meaning: Student has attendance record
