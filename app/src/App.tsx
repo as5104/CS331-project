@@ -12,7 +12,7 @@ import { CGPACalculator } from '@/pages/student/CGPACalculator';
 import { Notifications } from '@/pages/student/Notifications';
 // import { FacultyDashboard } from '@/pages/faculty/FacultyDashboard';
 // import { AdminDashboard } from '@/pages/admin/AdminDashboard';
-import { PlaceholderPage } from '@/pages/PlaceholderPage';
+// import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import type { UserRole } from '@/types';
 
 type PageRoute = 
