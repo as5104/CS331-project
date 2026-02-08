@@ -1,0 +1,70 @@
+flowchart LR
+
+%% External Entities
+Student([Student])
+Faculty([Faculty])
+Admin([Admin])
+Auth([Authentication Service])
+Cloud([Document Storage])
+
+%% Processes
+P1((1. Authentication & Profile Management))
+P2((2. Course & Content Management))
+P3((3. Assignment & Evaluation))
+P4((4. Attendance & Leave Management))
+P5((5. Notifications & Announcements))
+P6((6. Admin & Workflow Control))
+
+%% Data Stores
+D1[(D1 User Database)]
+D2[(D2 Course Database)]
+D3[(D3 Assignment Database)]
+D4[(D4 Grades Database)]
+D5[(D5 Attendance Database)]
+D6[(D6 Document Metadata)]
+D7[(D7 Rules & Workflow)]
+D8[(D8 Notifications & Logs)]
+
+%% Authentication Flow
+Student -->|Credentials| P1
+Faculty -->|Credentials| P1
+Admin -->|Credentials| P1
+P1 -->|Auth Request| Auth
+Auth -->|Auth Response| P1
+P1 --> D1
+
+%% Course Management
+Faculty -->|Course Data| P2
+Admin -->|Course Control| P2
+Student -->|View Courses| P2
+P2 --> D2
+P2 -->|Upload Material| Cloud
+P2 --> D6
+
+%% Assignment Management
+Student -->|Submit Assignment| P3
+Faculty -->|Evaluate Assignment| P3
+P3 --> D3
+P3 --> D4
+P3 -->|Store Files| Cloud
+P3 --> D6
+
+%% Attendance & Leave
+Student -->|Leave Request| P4
+Faculty -->|Mark Attendance| P4
+Admin -->|Approve Leave| P4
+P4 --> D5
+
+%% Notifications
+P3 --> P5
+P4 --> P5
+P6 --> P5
+P5 --> D8
+P5 --> Student
+P5 --> Faculty
+P5 --> Admin
+
+%% Admin & Workflow
+Admin -->|Configure Rules| P6
+P6 --> D7
+P6 --> D8
