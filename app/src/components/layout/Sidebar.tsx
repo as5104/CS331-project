@@ -1,331 +1,261 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import type { UserRole } from '@/types';
 import {
-  Menu,
-  Search,
-  Bell,
-  ChevronDown,
-  Check,
-  Clock,
-  AlertCircle,
+  LayoutDashboard,
   User,
+  BookOpen,
+  FileText,
+  Calendar,
+  Bell,
+  GraduationCap,
+  ClipboardCheck,
+  Users,
   Settings,
+  BarChart3,
+  Megaphone,
+  Workflow,
+  X,
+  LogOut,
+  ChevronRight,
+  Calculator,
+  TrendingUp,
 } from 'lucide-react';
-import { mockNotifications } from '@/data/mockData';
-import type { Notification } from '@/types';
 
-interface HeaderProps {
-  title: string;
-  onNavigate: (path: string) => void;
-  onMenuClick: () => void;
+interface NavItem {
+  label: string;
+  icon: React.ElementType;
+  path: string;
+  children?: NavItem[];
 }
 
-const navItemsByRole = {
+const navItems: Record<UserRole, NavItem[]> = {
   student: [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'My Profile', path: '/profile' },
-    { label: 'Assignments', path: '/assignments' },
-    { label: 'Attendance', path: '/attendance' },
-    { label: 'CGPA Calculator', path: '/cgpa-calculator' },
-    { label: 'Re-evaluation', path: '/reevaluation' },
-    { label: 'Notifications', path: '/notifications' },
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { label: 'My Profile', icon: User, path: '/profile' },
+    { label: 'Assignments', icon: FileText, path: '/assignments' },
+    { 
+      label: 'Attendance', 
+      icon: Calendar, 
+      path: '/view-attendance',
+      children: [
+        { label: 'Leave Request', icon: Calendar, path: '/leave-request' },
+      ],
+    },
+    { label: 'CGPA Calculator', icon: Calculator, path: '/cgpa-calculator' },
+    { label: 'Re-evaluation', icon: TrendingUp, path: '/reevaluation' },
+    { label: 'Notifications', icon: Bell, path: '/notifications' },
   ],
   faculty: [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'My Profile', path: '/profile' },
-    { label: 'My Courses', path: '/courses' },
-    { label: 'Review Assignments', path: '/review' },
-    { label: 'Mark Attendance', path: '/attendance' },
-    { label: 'Notifications', path: '/notifications' },
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { label: 'My Profile', icon: User, path: '/profile' },
+    { label: 'My Courses', icon: BookOpen, path: '/courses' },
+    { label: 'Review Assignments', icon: ClipboardCheck, path: '/review' },
+    { label: 'Mark Attendance', icon: Calendar, path: '/attendance' },
+    { label: 'Notifications', icon: Bell, path: '/notifications' },
   ],
   admin: [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'User Management', path: '/users' },
-    { label: 'Workflows', path: '/workflows' },
-    { label: 'System Monitor', path: '/monitor' },
-    { label: 'Announcements', path: '/announcements' },
-    { label: 'Settings', path: '/settings' },
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { label: 'User Management', icon: Users, path: '/users' },
+    { label: 'Workflows', icon: Workflow, path: '/workflows' },
+    { label: 'System Monitor', icon: BarChart3, path: '/monitor' },
+    { label: 'Announcements', icon: Megaphone, path: '/announcements' },
+    { label: 'Settings', icon: Settings, path: '/settings' },
   ],
-} as const;
+};
 
-export function Header({ title, onNavigate, onMenuClick }: HeaderProps) {
-  const { user } = useAuth();
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [searchQuery, setSearchQuery] = useState('');
+interface SidebarProps {
+  activePath: string;
+  onNavigate: (path: string) => void;
+  isMobileOpen: boolean;
+  onMobileClose: () => void;
+}
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+export function Sidebar({ activePath, onNavigate, isMobileOpen, onMobileClose }: SidebarProps) {
+  const { user, logout } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
+  if (!user) return null;
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, read: true }))
-    );
-  };
+  const items = navItems[user.role];
+  const roleColor = {
+    student: 'from-blue-500 to-blue-600',
+    faculty: 'from-purple-500 to-purple-600',
+    admin: 'from-emerald-500 to-emerald-600',
+  }[user.role];
 
-  const getNotificationIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'success':
-        return <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center"><Check className="w-4 h-4 text-green-600" /></div>;
-      case 'warning':
-        return <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center"><Clock className="w-4 h-4 text-amber-600" /></div>;
-      case 'error':
-        return <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center"><AlertCircle className="w-4 h-4 text-red-600" /></div>;
-      default:
-        return <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center"><Bell className="w-4 h-4 text-blue-600" /></div>;
-    }
-  };
+  const roleLabel = {
+    student: 'Student Portal',
+    faculty: 'Faculty Portal',
+    admin: 'Admin Portal',
+  }[user.role];
 
-  const searchItems = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query || !user) return [];
-    const items = navItemsByRole[user.role] ?? [];
-    return items.filter(item => item.label.toLowerCase().includes(query));
-  }, [searchQuery, user]);
-
-  const handleSearchSelect = (path: string) => {
-    onNavigate(path);
-    setSearchQuery('');
-    setShowSearch(false);
-  };
-
-  return (
-    <header className="sticky top-0 z-20 bg-card/80 backdrop-blur-md border-b border-border">
-      <div className="flex items-center justify-between h-16 px-4 lg:px-6">
-        {/* Left Section */}
-        <div className="flex items-center gap-4">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </motion.button>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-xl font-semibold text-foreground"
-          >
-            {title}
-          </motion.h1>
-        </div>
-
-        {/* Right Section */}
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3">
-          {/* Search */}
-          <div className="hidden md:flex items-center relative">
-            <Search className="absolute left-3 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowSearch(true)}
-              onBlur={() => setTimeout(() => setShowSearch(false), 100)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && searchItems.length > 0) {
-                  handleSearchSelect(searchItems[0].path);
-                }
-              }}
-              className="pl-10 pr-4 py-2 w-64 rounded-xl border border-border bg-muted/50 text-sm
-                focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                transition-all duration-200"
-            />
-            <AnimatePresence>
-              {showSearch && searchQuery.trim().length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute left-0 top-full mt-2 w-full bg-card rounded-xl shadow-lg border border-border z-50 overflow-hidden"
-                >
-                  {searchItems.length === 0 ? (
-                    <div className="p-3 text-xs text-muted-foreground">No results</div>
-                  ) : (
-                    <div className="py-1">
-                      {searchItems.map((item) => (
-                        <button
-                          key={item.path}
-                          onMouseDown={() => handleSearchSelect(item.path)}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${roleColor} flex items-center justify-center shadow-lg`}>
+            <GraduationCap className="w-6 h-6 text-white" />
           </div>
-
-          {/* Notifications */}
-          <div className="relative">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-xl hover:bg-muted transition-colors"
-            >
-              <Bell className="w-5 h-5 text-muted-foreground" />
-              {unreadCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold 
-                    rounded-full flex items-center justify-center"
-                >
-                  {unreadCount}
-                </motion.span>
-              )}
-            </motion.button>
-
-            <AnimatePresence>
-              {showNotifications && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowNotifications(false)}
-                    className="fixed inset-0 z-40"
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-2 w-80 bg-card rounded-xl shadow-lg border border-border z-50 overflow-hidden"
-                  >
-                    <div className="flex items-center justify-between p-4 border-b border-border">
-                      <h3 className="font-semibold text-sm">Notifications</h3>
-                      {unreadCount > 0 && (
-                        <button
-                          onClick={markAllAsRead}
-                          className="text-xs text-primary hover:underline"
-                        >
-                          Mark all read
-                        </button>
-                      )}
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground">
-                          <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">No notifications</p>
-                        </div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <motion.div
-                            key={notification.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            onClick={() => markAsRead(notification.id)}
-                            className={`
-                              flex items-start gap-3 p-4 border-b border-border last:border-0
-                              hover:bg-muted/50 transition-colors cursor-pointer
-                              ${!notification.read ? 'bg-primary/5' : ''}
-                            `}
-                          >
-                            {getNotificationIcon(notification.type)}
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm ${!notification.read ? 'font-medium' : ''}`}>
-                                {notification.title}
-                              </p>
-                              <p className="text-xs text-muted-foreground line-clamp-2">
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(notification.timestamp).toLocaleDateString()}
-                              </p>
-                            </div>
-                            {!notification.read && (
-                              <div className="w-2 h-2 bg-primary rounded-full mt-1" />
-                            )}
-                          </motion.div>
-                        ))
-                      )}
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Profile */}
-          <div className="relative">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setShowProfile(!showProfile)}
-              className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-muted transition-colors"
-            >
-              <img
-                src={user?.avatar}
-                alt={user?.name}
-                className="w-8 h-8 rounded-full border border-border"
-              />
-              <span className="hidden sm:block text-sm font-medium">{user?.name}</span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            </motion.button>
-
-            <AnimatePresence>
-              {showProfile && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowProfile(false)}
-                    className="fixed inset-0 z-40"
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-2 w-64 bg-card rounded-xl shadow-lg border border-border z-50 overflow-hidden"
-                  >
-                    <div className="p-4 border-b border-border">
-                      <p className="font-medium">{user?.name}</p>
-                      <p className="text-sm text-muted-foreground">{user?.email}</p>
-                      <span className={`
-                        inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-xs font-medium
-                        ${user?.role === 'admin' ? 'bg-emerald-100 text-emerald-700' : 
-                          user?.role === 'faculty' ? 'bg-purple-100 text-purple-700' : 
-                          'bg-blue-100 text-blue-700'}
-                      `}>
-                        {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
-                      </span>
-                    </div>
-                    <div className="p-2">
-                      <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors">
-                        <User className="w-4 h-4" />
-                        Profile Settings
-                      </button>
-                      <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors">
-                        <Settings className="w-4 h-4" />
-                        Preferences
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col">
+              <span className="font-bold text-lg text-foreground leading-tight">UniAdmin</span>
+              <span className="text-xs text-muted-foreground">{roleLabel}</span>
+            </div>
+          )}
         </div>
       </div>
-    </header>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        {items.map((item, index) => {
+          const isActive = activePath === item.path || item.children?.some(child => child.path === activePath);
+          const Icon = item.icon;
+          
+          return (
+            <div key={item.path}>
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => {
+                  onNavigate(item.path);
+                  onMobileClose();
+                }}
+                className={`
+                  w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+                  transition-all duration-200 group relative overflow-hidden
+                  ${isActive 
+                    ? 'sidebar-item-active' 
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }
+                `}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'group-hover:text-foreground'}`} />
+                {!isCollapsed && (
+                  <span className="flex-1 text-left">{item.label}</span>
+                )}
+                {!isCollapsed && isActive && (
+                  <ChevronRight className="w-4 h-4 text-primary" />
+                )}
+              </motion.button>
+
+              {!isCollapsed && item.children && item.children.length > 0 && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {item.children.map((child) => {
+                    const childActive = activePath === child.path;
+                    return (
+                      <button
+                        key={child.path}
+                        onClick={() => {
+                          onNavigate(child.path);
+                          onMobileClose();
+                        }}
+                        className={`
+                          w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium
+                          transition-all duration-200
+                          ${childActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'}
+                        `}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${childActive ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                        <span className="text-left">{child.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* User Profile */}
+      <div className="p-4 border-t border-border">
+        <div className={`
+          flex items-center gap-3 p-3 rounded-xl bg-muted/50
+          ${isCollapsed ? 'justify-center' : ''}
+        `}>
+          <img
+            src={user.avatar}
+            alt={user.name}
+            className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
+          />
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            </div>
+          )}
+        </div>
+        
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={logout}
+          className={`
+            w-full flex items-center gap-3 px-4 py-3 mt-2 rounded-xl
+            text-sm font-medium text-red-600 hover:bg-red-50
+            transition-colors duration-200
+            ${isCollapsed ? 'justify-center' : ''}
+          `}
+        >
+          <LogOut className="w-5 h-5" />
+          {!isCollapsed && <span>Logout</span>}
+        </motion.button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <motion.aside
+        initial={false}
+        animate={{ width: isCollapsed ? 80 : 280 }}
+        className="hidden lg:flex flex-col h-screen bg-card border-r border-border sticky top-0 z-30"
+      >
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-20 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
+        >
+          <ChevronRight className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
+        </button>
+        {sidebarContent}
+      </motion.aside>
+
+      {/* Mobile Sidebar */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onMobileClose}
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 h-screen w-72 bg-card border-r border-border z-50 lg:hidden"
+            >
+              <button
+                onClick={onMobileClose}
+                className="absolute right-4 top-4 p-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              {sidebarContent}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
