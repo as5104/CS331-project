@@ -15,7 +15,7 @@ tailwindcss-animate>=1.0            # Animation utilities
 React Hook Form>=7.70               # Form handling
 
 # Database
-PostgreSQL>=11.5              
+PostgreSQL>=11.7              
 
 # Backend-as-a-Service
 Supabase JS>=2                      # Auth + database access (students)
