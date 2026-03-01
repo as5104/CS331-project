@@ -21,6 +21,15 @@ export interface Student extends User {
   cgpa: number;
   attendance: number;
   courses: Course[];
+  // Admission fields (set by admin at onboarding)
+  dateOfBirth?: string;
+  gender?: string;
+  bloodGroup?: string;
+  phone?: string;
+  batchYear?: string;
+  fatherName?: string;
+  motherName?: string;
+  guardianContact?: string;
 }
 
 // Faculty specific
@@ -28,6 +37,8 @@ export interface Faculty extends User {
   role: 'faculty';
   employeeId: string;
   designation: string;
+  qualification?: string;
+  dateOfJoining?: string;
   courses: Course[];
 }
 
@@ -136,4 +147,78 @@ export interface Announcement {
   priority: 'low' | 'medium' | 'high';
   publishedAt: string;
   author: string;
+}
+
+// ---------- Admin Onboarding Forms ----------
+
+export interface StudentAdmissionForm {
+  // Personal
+  name: string;
+  dateOfBirth: string;
+  gender: 'Male' | 'Female' | 'Other';
+  bloodGroup: string;
+  phone: string;
+  // Academic
+  rollNumber: string;
+  program: string;
+  department: string;
+  batchYear: string;
+  semester: number;
+  institution: string;
+  // Guardian
+  fatherName: string;
+  motherName: string;
+  guardianContact: string;
+}
+
+export interface FacultyAdmissionForm {
+  // Personal
+  name: string;
+  dateOfBirth: string;
+  gender: 'Male' | 'Female' | 'Other';
+  phone: string;
+  // Professional
+  employeeId: string;
+  department: string;
+  designation: 'Assistant Professor' | 'Associate Professor' | 'Professor' | 'Lecturer';
+  qualification: string;
+  dateOfJoining: string;
+  institution: string;
+}
+
+// Row returned from Supabase students / faculty tables
+export interface StudentRow {
+  id: string;
+  auth_user_id: string;
+  email: string;
+  name: string;
+  roll_number: string;
+  program: string;
+  department: string;
+  batch_year: string;
+  semester: number;
+  cgpa: number;
+  attendance: number;
+  gender?: string;
+  phone?: string;
+  institution?: string;
+  avatar?: string;
+  courses: Course[];
+}
+
+export interface FacultyRow {
+  id: string;
+  auth_user_id: string;
+  email: string;
+  name: string;
+  employee_id: string;
+  department: string;
+  designation: string;
+  qualification?: string;
+  date_of_joining?: string;
+  gender?: string;
+  phone?: string;
+  institution?: string;
+  avatar?: string;
+  courses: Course[];
 }

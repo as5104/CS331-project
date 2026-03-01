@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Login } from '@/pages/Login';
+
+// Student Pages
 import { StudentDashboard } from '@/pages/student/StudentDashboard';
 import { StudentProfile } from '@/pages/student/StudentProfile';
 import { SubmitAssignment } from '@/pages/student/SubmitAssignment';
@@ -10,12 +12,21 @@ import { LeaveRequest } from '@/pages/student/LeaveRequest';
 import { ViewAttendance } from '@/pages/student/ViewAttendance';
 import { CGPACalculator } from '@/pages/student/CGPACalculator';
 import { Notifications } from '@/pages/student/Notifications';
-// import { FacultyDashboard } from '@/pages/faculty/FacultyDashboard';
-// import { AdminDashboard } from '@/pages/admin/AdminDashboard';
-// import { PlaceholderPage } from '@/pages/PlaceholderPage';
+
+// Faculty Pages (placeholder — full faculty dashboard is next milestone)
+import { FacultyDashboard } from '@/pages/faculty/FacultyDashboard';
+
+// Admin Pages
+import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+import { UserManagement } from '@/pages/admin/UserManagement';
+import { AdminWorkflows } from '@/pages/admin/AdminWorkflows';
+import { AdminMonitor } from '@/pages/admin/AdminMonitor';
+import { AdminAnnouncements } from '@/pages/admin/AdminAnnouncements';
+import { AdminSettings } from '@/pages/admin/AdminSettings';
+
 import type { UserRole } from '@/types';
 
-type PageRoute = 
+type PageRoute =
   | '/login'
   | '/dashboard'
   | '/profile'
@@ -55,192 +66,82 @@ function AppContent() {
     const role = user?.role as UserRole;
 
     switch (currentPage) {
+      // ── Dashboard ───────────────────────────────────────────────────────────
       case '/dashboard':
-        if (role === 'student') {
-          return <StudentDashboard onNavigate={handleNavigate} />;
-        } else if (role === 'faculty') {
-          return <FacultyDashboard onNavigate={handleNavigate} />;
-        } else {
-          return <AdminDashboard onNavigate={handleNavigate} />;
-        }
+        if (role === 'student') return <StudentDashboard onNavigate={handleNavigate} />;
+        if (role === 'faculty') return <FacultyDashboard onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
-      // Student Routes
+      // ── Student Routes ──────────────────────────────────────────────────────
       case '/profile':
-        if (role === 'student') {
-          return <StudentProfile onNavigate={handleNavigate} />;
-        }
-        return (
-          <PlaceholderPage
-            title="My Profile"
-            description="View and manage your personal information."
-            activePath="/profile"
-            onNavigate={handleNavigate}
-          />
-        );
+        if (role === 'student') return <StudentProfile onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/courses':
-        if (role === 'student') {
-          return <StudentProfile onNavigate={handleNavigate} />;
-        }
-        return (
-          <PlaceholderPage
-            title="Course Management"
-            description="Manage your courses and materials."
-            activePath="/courses"
-            onNavigate={handleNavigate}
-          />
-        );
+        if (role === 'student') return <StudentProfile onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/assignments':
-        if (role === 'student') {
-          return <SubmitAssignment onNavigate={handleNavigate} />;
-        }
-        return (
-          <PlaceholderPage
-            title="Assignments"
-            description="Create, manage, and grade student assignments."
-            activePath="/assignments"
-            onNavigate={handleNavigate}
-          />
-        );
+        if (role === 'student') return <SubmitAssignment onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/submit-assignment':
-        if (role === 'student') {
-          return <SubmitAssignment onNavigate={handleNavigate} />;
-        }
+        if (role === 'student') return <SubmitAssignment onNavigate={handleNavigate} />;
         return <StudentDashboard onNavigate={handleNavigate} />;
 
       case '/reevaluation':
-        if (role === 'student') {
-          return <ExamReevaluation onNavigate={handleNavigate} />;
-        }
+        if (role === 'student') return <ExamReevaluation onNavigate={handleNavigate} />;
         return <StudentDashboard onNavigate={handleNavigate} />;
 
       case '/attendance':
-        if (role === 'student') {
-          return <ViewAttendance onNavigate={handleNavigate} />;
-        }
-        return (
-          <PlaceholderPage
-            title="Attendance"
-            description="Mark and manage student attendance."
-            activePath="/attendance"
-            onNavigate={handleNavigate}
-          />
-        );
+        if (role === 'student') return <ViewAttendance onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/leave-request':
-        if (role === 'student') {
-          return <LeaveRequest onNavigate={handleNavigate} />;
-        }
+        if (role === 'student') return <LeaveRequest onNavigate={handleNavigate} />;
         return <StudentDashboard onNavigate={handleNavigate} />;
 
       case '/view-attendance':
-        if (role === 'student') {
-          return <ViewAttendance onNavigate={handleNavigate} />;
-        }
+        if (role === 'student') return <ViewAttendance onNavigate={handleNavigate} />;
+        return <StudentDashboard onNavigate={handleNavigate} />;
+
+      case '/cgpa-calculator':
+        if (role === 'student') return <CGPACalculator onNavigate={handleNavigate} />;
         return <StudentDashboard onNavigate={handleNavigate} />;
 
       case '/notifications':
-        if (role === 'student') {
-          return <Notifications onNavigate={handleNavigate} />;
-        }
-        return (
-          <PlaceholderPage
-            title="Notifications"
-            description="View all notifications and announcements."
-            activePath="/notifications"
-            onNavigate={handleNavigate}
-          />
-        );
+        if (role === 'student') return <Notifications onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
-      case '/cgpa-calculator':
-        if (role === 'student') {
-          return <CGPACalculator onNavigate={handleNavigate} />;
-        }
-        return <StudentDashboard onNavigate={handleNavigate} />;
-
-      // Faculty Routes
+      // ── Faculty Routes ──────────────────────────────────────────────────────
       case '/review':
-        if (role === 'faculty') {
-          return (
-            <PlaceholderPage
-              title="Review Assignments"
-              description="Review and grade student assignment submissions."
-              activePath="/review"
-              onNavigate={handleNavigate}
-            />
-          );
-        }
-        return <StudentDashboard onNavigate={handleNavigate} />;
+        if (role === 'faculty') return <FacultyDashboard onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
-      // Admin Routes
+      // ── Admin Routes ────────────────────────────────────────────────────────
       case '/users':
-        if (role === 'admin') {
-          return (
-            <PlaceholderPage
-              title="User Management"
-              description="Onboard new users, manage roles and permissions."
-              activePath="/users"
-              onNavigate={handleNavigate}
-            />
-          );
-        }
-        return <StudentDashboard onNavigate={handleNavigate} />;
+        if (role === 'admin') return <UserManagement onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/workflows':
-        if (role === 'admin') {
-          return (
-            <PlaceholderPage
-              title="Workflow Configuration"
-              description="Configure and manage administrative workflows."
-              activePath="/workflows"
-              onNavigate={handleNavigate}
-            />
-          );
-        }
-        return <StudentDashboard onNavigate={handleNavigate} />;
+        if (role === 'admin') return <AdminWorkflows onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/monitor':
-        if (role === 'admin') {
-          return (
-            <PlaceholderPage
-              title="System Monitoring"
-              description="Monitor system performance and manage alerts."
-              activePath="/monitor"
-              onNavigate={handleNavigate}
-            />
-          );
-        }
-        return <StudentDashboard onNavigate={handleNavigate} />;
+        if (role === 'admin') return <AdminMonitor onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/announcements':
-        if (role === 'admin') {
-          return (
-            <PlaceholderPage
-              title="Announcements"
-              description="Create and publish announcements."
-              activePath="/announcements"
-              onNavigate={handleNavigate}
-            />
-          );
-        }
-        return <StudentDashboard onNavigate={handleNavigate} />;
+        if (role === 'admin') return <AdminAnnouncements onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/settings':
-        if (role === 'admin') {
-          return (
-            <PlaceholderPage
-              title="System Settings"
-              description="Configure system settings and integrations."
-              activePath="/settings"
-              onNavigate={handleNavigate}
-            />
-          );
-        }
-        return <StudentDashboard onNavigate={handleNavigate} />;
+        if (role === 'admin') return <AdminSettings onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
 
       default:
+        if (role === 'admin') return <AdminDashboard onNavigate={handleNavigate} />;
+        if (role === 'faculty') return <FacultyDashboard onNavigate={handleNavigate} />;
         return <StudentDashboard onNavigate={handleNavigate} />;
     }
   };
