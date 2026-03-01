@@ -374,164 +374,170 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                             onClick={closeModal}
                             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
 
-                        <motion.div initial={{ opacity: 0, x: '100%' }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: '100%' }}
-                            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                            className="fixed right-0 top-0 h-screen w-full max-w-xl bg-card shadow-2xl z-50 flex flex-col">
+                        {/* Centered popup */}
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                                className="relative w-full max-w-xl max-h-[90vh] bg-card rounded-2xl shadow-2xl border border-border flex flex-col overflow-hidden">
 
-                            {/* Modal Header */}
-                            <div className={`p-5 border-b border-border flex items-center justify-between flex-shrink-0
+                                {/* Modal Header */}
+                                <div className={`p-5 border-b border-border flex items-center justify-between flex-shrink-0
                 ${modal === 'add-student' ? 'bg-blue-50/50' : 'bg-purple-50/50'}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center
                     ${modal === 'add-student' ? 'bg-blue-100' : 'bg-purple-100'}`}>
-                                        <UserPlus className={`w-5 h-5 ${modal === 'add-student' ? 'text-blue-600' : 'text-purple-600'}`} />
+                                            <UserPlus className={`w-5 h-5 ${modal === 'add-student' ? 'text-blue-600' : 'text-purple-600'}`} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold">{modal === 'add-student' ? 'Admit New Student' : 'Onboard Faculty Member'}</h3>
+                                            <p className="text-xs text-muted-foreground">Fill all required fields (*)</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold">{modal === 'add-student' ? 'Admit New Student' : 'Onboard Faculty Member'}</h3>
-                                        <p className="text-xs text-muted-foreground">Fill all required fields (*)</p>
-                                    </div>
+                                    <button onClick={closeModal} className="p-2 rounded-xl hover:bg-muted transition-colors">
+                                        <X className="w-5 h-5" />
+                                    </button>
                                 </div>
-                                <button onClick={closeModal} className="p-2 rounded-xl hover:bg-muted transition-colors">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
 
-                            {/* Progress Stepper */}
-                            <div className="px-5 py-4 border-b border-border flex-shrink-0">
-                                <div className="flex items-center gap-1">
-                                    {sections.map((sec, idx) => {
-                                        const isActive = sec.id === currentSection;
-                                        const isDone = idx < sectionIndex;
-                                        return (
-                                            <div key={sec.id} className="flex items-center flex-1">
-                                                <div className="flex flex-col items-center">
-                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                                {/* Progress Stepper */}
+                                <div className="px-5 py-4 border-b border-border flex-shrink-0">
+                                    <div className="flex items-center gap-1">
+                                        {sections.map((sec, idx) => {
+                                            const isActive = sec.id === currentSection;
+                                            const isDone = idx < sectionIndex;
+                                            return (
+                                                <div key={sec.id} className="flex items-center flex-1">
+                                                    <div className="flex flex-col items-center">
+                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
                             ${isDone ? 'bg-emerald-500 text-white' : isActive ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                                                        {isDone ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                                                            {isDone ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                                                        </div>
+                                                        <span className={`text-[10px] mt-1 font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{sec.label}</span>
                                                     </div>
-                                                    <span className={`text-[10px] mt-1 font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{sec.label}</span>
+                                                    {idx < sections.length - 1 && (
+                                                        <div className={`flex-1 h-0.5 mx-1 mb-3 rounded-full transition-colors ${isDone ? 'bg-emerald-400' : 'bg-muted'}`} />
+                                                    )}
                                                 </div>
-                                                {idx < sections.length - 1 && (
-                                                    <div className={`flex-1 h-0.5 mx-1 mb-3 rounded-full transition-colors ${isDone ? 'bg-emerald-400' : 'bg-muted'}`} />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Form Body */}
-                            <div className="flex-1 overflow-y-auto p-5">
-                                <AnimatePresence mode="wait">
-                                    {modal === 'add-student' ? (
-                                        <StudentFormSections
-                                            key={`student-${currentSection}`}
-                                            section={currentSection}
-                                            form={studentForm}
-                                            onChange={setStudentForm}
-                                            generatedEmail={generatedEmail}
-                                            setGeneratedEmail={setGeneratedEmail}
-                                            generatedPassword={generatedPassword}
-                                            setGeneratedPassword={setGeneratedPassword}
-                                            showPassword={showPassword}
-                                            setShowPassword={setShowPassword}
-                                        />
-                                    ) : (
-                                        <FacultyFormSections
-                                            key={`faculty-${currentSection}`}
-                                            section={currentSection}
-                                            form={facultyForm}
-                                            onChange={setFacultyForm}
-                                            generatedEmail={generatedEmail}
-                                            setGeneratedEmail={setGeneratedEmail}
-                                            generatedPassword={generatedPassword}
-                                            setGeneratedPassword={setGeneratedPassword}
-                                            showPassword={showPassword}
-                                            setShowPassword={setShowPassword}
-                                        />
-                                    )}
-                                </AnimatePresence>
+                                {/* Form Body */}
+                                <div className="flex-1 overflow-y-auto p-5">
+                                    <AnimatePresence mode="wait">
+                                        {modal === 'add-student' ? (
+                                            <StudentFormSections
+                                                key={`student-${currentSection}`}
+                                                section={currentSection}
+                                                form={studentForm}
+                                                onChange={setStudentForm}
+                                                generatedEmail={generatedEmail}
+                                                setGeneratedEmail={setGeneratedEmail}
+                                                generatedPassword={generatedPassword}
+                                                setGeneratedPassword={setGeneratedPassword}
+                                                showPassword={showPassword}
+                                                setShowPassword={setShowPassword}
+                                            />
+                                        ) : (
+                                            <FacultyFormSections
+                                                key={`faculty-${currentSection}`}
+                                                section={currentSection}
+                                                form={facultyForm}
+                                                onChange={setFacultyForm}
+                                                generatedEmail={generatedEmail}
+                                                setGeneratedEmail={setGeneratedEmail}
+                                                generatedPassword={generatedPassword}
+                                                setGeneratedPassword={setGeneratedPassword}
+                                                showPassword={showPassword}
+                                                setShowPassword={setShowPassword}
+                                            />
+                                        )}
+                                    </AnimatePresence>
 
-                                {/* Result Banner */}
-                                {submitResult && (
-                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                        className={`mt-4 p-4 rounded-xl border flex items-start gap-3
+                                    {/* Result Banner */}
+                                    {submitResult && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                            className={`mt-4 p-4 rounded-xl border flex items-start gap-3
                       ${submitResult.success ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-                                        {submitResult.success
-                                            ? <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                                            : <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />}
-                                        <p className={`text-sm ${submitResult.success ? 'text-emerald-700' : 'text-red-600'}`}>
-                                            {submitResult.message}
-                                        </p>
-                                    </motion.div>
-                                )}
+                                            {submitResult.success
+                                                ? <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                                : <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />}
+                                            <p className={`text-sm ${submitResult.success ? 'text-emerald-700' : 'text-red-600'}`}>
+                                                {submitResult.message}
+                                            </p>
+                                        </motion.div>
+                                    )}
 
-                                {/* Credential Card (shown after success) */}
-                                {createdCredentials && (
-                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                        className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50">
-                                        <p className="text-sm font-semibold text-emerald-800 mb-3">⚠️ Save these credentials now — they won't be shown again!</p>
-                                        {[
-                                            { label: 'University Email', value: createdCredentials.email },
-                                            { label: 'Password', value: createdCredentials.password },
-                                        ].map(item => (
-                                            <div key={item.label} className="flex items-center justify-between bg-white rounded-lg border border-emerald-200 px-3 py-2 mb-2">
-                                                <div>
-                                                    <p className="text-xs text-muted-foreground">{item.label}</p>
-                                                    <p className="text-sm font-mono font-medium">{item.value}</p>
+                                    {/* Credential Card (shown after success) */}
+                                    {createdCredentials && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                            className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50">
+                                            <p className="text-sm font-semibold text-emerald-800 mb-3">⚠️ Save these credentials now — they won't be shown again!</p>
+                                            {[
+                                                { label: 'University Email', value: createdCredentials.email },
+                                                { label: 'Password', value: createdCredentials.password },
+                                            ].map(item => (
+                                                <div key={item.label} className="flex items-center justify-between bg-white rounded-lg border border-emerald-200 px-3 py-2 mb-2">
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">{item.label}</p>
+                                                        <p className="text-sm font-mono font-medium">{item.value}</p>
+                                                    </div>
+                                                    <CopyButton value={item.value} />
                                                 </div>
-                                                <CopyButton value={item.value} />
-                                            </div>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </div>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </div>
 
-                            {/* Footer Buttons */}
-                            <div className="p-5 border-t border-border flex-shrink-0 flex justify-between gap-3">
-                                {!createdCredentials ? (
-                                    <>
-                                        <button onClick={isFirstSection ? closeModal : goPrev}
-                                            className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
-                                            {isFirstSection ? 'Cancel' : '← Back'}
-                                        </button>
-                                        {isLastSection ? (
-                                            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                                                onClick={handleSubmit}
-                                                disabled={isSubmitting || !canProceedFromSection()}
-                                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-medium transition-colors
+                                {/* Footer Buttons */}
+                                <div className="p-5 border-t border-border flex-shrink-0 flex justify-between gap-3">
+                                    {!createdCredentials ? (
+                                        <>
+                                            <button onClick={isFirstSection ? closeModal : goPrev}
+                                                className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
+                                                {isFirstSection ? 'Cancel' : '← Back'}
+                                            </button>
+                                            {isLastSection ? (
+                                                <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                                                    onClick={handleSubmit}
+                                                    disabled={isSubmitting || !canProceedFromSection()}
+                                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-medium transition-colors
                           ${modal === 'add-student' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700'}
                           disabled:opacity-60 disabled:cursor-not-allowed`}>
-                                                {isSubmitting
-                                                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating Account...</>
-                                                    : <><CheckCircle2 className="w-4 h-4" /> Create Account</>}
-                                            </motion.button>
-                                        ) : (
-                                            <button onClick={goNext} disabled={!canProceedFromSection()}
-                                                className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition-colors
+                                                    {isSubmitting
+                                                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating Account...</>
+                                                        : <><CheckCircle2 className="w-4 h-4" /> Create Account</>}
+                                                </motion.button>
+                                            ) : (
+                                                <button onClick={goNext} disabled={!canProceedFromSection()}
+                                                    className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition-colors
                           disabled:opacity-50 disabled:cursor-not-allowed
                           ${modal === 'add-student' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700'}`}>
-                                                Next →
+                                                    Next →
+                                                </button>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button onClick={closeModal} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
+                                                Close
                                             </button>
-                                        )}
-                                    </>
-                                ) : (
-                                    <>
-                                        <button onClick={closeModal} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
-                                            Close
-                                        </button>
-                                        <button onClick={() => {
-                                            setCreatedCredentials(null); setSubmitResult(null); setCurrentSection('personal');
-                                            setStudentForm(emptyStudentForm); setFacultyForm(emptyFacultyForm);
-                                            setGeneratedPassword(generatePassword()); setGeneratedEmail('');
-                                        }}
-                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
-                                            <RotateCcw className="w-4 h-4" />Add Another
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        </motion.div>
+                                            <button onClick={() => {
+                                                setCreatedCredentials(null); setSubmitResult(null); setCurrentSection('personal');
+                                                setStudentForm(emptyStudentForm); setFacultyForm(emptyFacultyForm);
+                                                setGeneratedPassword(generatePassword()); setGeneratedEmail('');
+                                            }}
+                                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
+                                                <RotateCcw className="w-4 h-4" />Add Another
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </motion.div>
+                        </div>
                     </>
                 )}
             </AnimatePresence>
