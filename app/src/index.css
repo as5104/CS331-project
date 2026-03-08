@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Lexend:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -41,14 +41,23 @@
   * {
     @apply border-border;
   }
-  
+
   html {
     scroll-behavior: smooth;
   }
-  
+
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Lexend', system-ui, -apple-system, sans-serif;
   }
 }
 
@@ -56,71 +65,71 @@
   .gradient-bg {
     background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #22c55e 100%);
   }
-  
+
   .gradient-bg-subtle {
     background: linear-gradient(135deg, #f6f8fc 0%, #e8f4f8 100%);
   }
-  
+
   .card-shadow {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   }
-  
+
   .card-shadow-hover {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
   }
-  
+
   .text-gradient {
     background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .sidebar-item-active {
     @apply relative bg-primary/10 text-primary;
   }
-  
+
   .sidebar-item-active::before {
     content: '';
     @apply absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full;
   }
-  
+
   .status-badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
-  
+
   .status-badge-success {
     @apply bg-green-100 text-green-800;
   }
-  
+
   .status-badge-warning {
     @apply bg-amber-100 text-amber-800;
   }
-  
+
   .status-badge-error {
     @apply bg-red-100 text-red-800;
   }
-  
+
   .status-badge-info {
     @apply bg-blue-100 text-blue-800;
   }
-  
+
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
   }
-  
+
   .animate-slide-in-left {
     animation: slideInLeft 0.3s ease-out forwards;
   }
-  
+
   .animate-slide-in-up {
     animation: slideInUp 0.4s ease-out forwards;
   }
-  
+
   .animate-pulse-soft {
     animation: pulseSoft 2s ease-in-out infinite;
   }
-  
+
   .animate-count-up {
     animation: countUp 0.6s ease-out forwards;
   }
@@ -130,6 +139,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -140,6 +150,7 @@
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -151,6 +162,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -158,9 +170,12 @@
 }
 
 @keyframes pulseSoft {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -171,6 +186,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -204,6 +220,7 @@
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
