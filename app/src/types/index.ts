@@ -40,6 +40,10 @@ export interface Faculty extends User {
   qualification?: string;
   dateOfJoining?: string;
   courses: Course[];
+  // Admission fields (set by admin at onboarding)
+  dateOfBirth?: string;
+  gender?: string;
+  phone?: string;
 }
 
 // Admin specific
