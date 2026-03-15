@@ -56,6 +56,10 @@ function mapFacultyRow(row: any): Faculty {
     qualification: row.qualification ?? undefined,
     dateOfJoining: row.date_of_joining ?? undefined,
     courses: Array.isArray(row.courses) ? row.courses : [],
+    // Admission fields
+    dateOfBirth: row.date_of_birth ?? undefined,
+    gender: row.gender ?? undefined,
+    phone: row.phone ?? undefined,
   };
 }
 

@@ -13,8 +13,12 @@ import { ViewAttendance } from '@/pages/student/ViewAttendance';
 import { CGPACalculator } from '@/pages/student/CGPACalculator';
 import { Notifications } from '@/pages/student/Notifications';
 
-// Faculty Pages (placeholder — full faculty dashboard is next milestone)
+// Faculty Pages
 import { FacultyDashboard } from '@/pages/faculty/FacultyDashboard';
+import { FacultyProfile } from '@/pages/faculty/FacultyProfile';
+import { FacultyCourses } from '@/pages/faculty/FacultyCourses';
+import { FacultyReviewAssignments } from '@/pages/faculty/FacultyReviewAssignments';
+import { FacultyAttendance } from '@/pages/faculty/FacultyAttendance';
 
 // Admin Pages
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
@@ -75,10 +79,12 @@ function AppContent() {
       // ── Student Routes ──────────────────────────────────────────────────────
       case '/profile':
         if (role === 'student') return <StudentProfile onNavigate={handleNavigate} />;
+        if (role === 'faculty') return <FacultyProfile onNavigate={handleNavigate} />;
         return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/courses':
         if (role === 'student') return <StudentProfile onNavigate={handleNavigate} />;
+        if (role === 'faculty') return <FacultyCourses onNavigate={handleNavigate} />;
         return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/assignments':
@@ -95,6 +101,7 @@ function AppContent() {
 
       case '/attendance':
         if (role === 'student') return <ViewAttendance onNavigate={handleNavigate} />;
+        if (role === 'faculty') return <FacultyAttendance onNavigate={handleNavigate} />;
         return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/leave-request':
@@ -111,11 +118,12 @@ function AppContent() {
 
       case '/notifications':
         if (role === 'student') return <Notifications onNavigate={handleNavigate} />;
+        if (role === 'faculty') return <Notifications onNavigate={handleNavigate} />;
         return <AdminDashboard onNavigate={handleNavigate} />;
 
       // ── Faculty Routes ──────────────────────────────────────────────────────
       case '/review':
-        if (role === 'faculty') return <FacultyDashboard onNavigate={handleNavigate} />;
+        if (role === 'faculty') return <FacultyReviewAssignments onNavigate={handleNavigate} />;
         return <AdminDashboard onNavigate={handleNavigate} />;
 
       // ── Admin Routes ────────────────────────────────────────────────────────
