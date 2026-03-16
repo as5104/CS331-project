@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { RecoveryEmailPanel } from '@/components/security/RecoveryEmailPanel';
 import type { Faculty } from '@/types';
 import {
     User, Mail, Phone, Calendar, BookOpen,
@@ -13,7 +14,7 @@ interface FacultyProfileProps {
 }
 
 function formatDate(dateStr?: string) {
-    if (!dateStr) return '—';
+    if (!dateStr) return '-';
     try {
         return new Date(dateStr).toLocaleDateString('en-IN', {
             day: '2-digit', month: 'long', year: 'numeric',
@@ -31,7 +32,7 @@ function InfoRow({ icon: Icon, label, value }: {
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="font-medium text-sm truncate">{value || '—'}</p>
+                <p className="font-medium text-sm truncate">{value || '-'}</p>
             </div>
         </div>
     );
@@ -44,8 +45,6 @@ export function FacultyProfile({ onNavigate }: FacultyProfileProps) {
 
     return (
         <DashboardLayout title="My Profile" activePath="/profile" onNavigate={onNavigate}>
-
-            {/* ── Profile Hero ──────────────────────────────────────────────── */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="bg-gradient-to-br from-purple-600 to-purple-500 rounded-2xl p-6 sm:p-8 text-white mb-6"
@@ -83,10 +82,7 @@ export function FacultyProfile({ onNavigate }: FacultyProfileProps) {
                 </div>
             </motion.div>
 
-            {/* ── Info Grid ─────────────────────────────────────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                {/* Personal */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                     className="bg-card rounded-xl border border-border p-6">
                     <h3 className="font-semibold flex items-center gap-2 mb-4">
@@ -102,7 +98,6 @@ export function FacultyProfile({ onNavigate }: FacultyProfileProps) {
                     </div>
                 </motion.div>
 
-                {/* Professional */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                     className="bg-card rounded-xl border border-border p-6">
                     <h3 className="font-semibold flex items-center gap-2 mb-4">
@@ -117,10 +112,13 @@ export function FacultyProfile({ onNavigate }: FacultyProfileProps) {
                         <InfoRow icon={Layers} label="Courses Assigned" value={courses.length} />
                     </div>
                 </motion.div>
-
             </div>
 
-            {/* ── Assigned Courses ──────────────────────────────────────────── */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+                className="mt-6">
+                <RecoveryEmailPanel tone="faculty" />
+            </motion.div>
+
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="mt-6 bg-card rounded-xl border border-border p-6">
                 <h3 className="font-semibold flex items-center gap-2 mb-4">
@@ -145,7 +143,7 @@ export function FacultyProfile({ onNavigate }: FacultyProfileProps) {
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="text-muted-foreground">{course.credits} Credits</span>
                                     <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full font-medium">
-                                        Sem {course.semester || '—'}
+                                        Sem {course.semester || '-'}
                                     </span>
                                 </div>
                             </motion.div>

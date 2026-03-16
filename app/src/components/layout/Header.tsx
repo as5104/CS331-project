@@ -41,6 +41,7 @@ const navItemsByRole = {
   ],
   admin: [
     { label: 'Dashboard', path: '/dashboard' },
+    { label: 'My Profile', path: '/profile' },
     { label: 'User Management', path: '/users' },
     { label: 'Workflows', path: '/workflows' },
     { label: 'System Monitor', path: '/monitor' },

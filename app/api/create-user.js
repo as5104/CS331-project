@@ -1,6 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
+import {
+    handleOptions,
+    setCorsHeaders,
+    ensureOriginAllowed,
+    getAuthUserFromRequest,
+    normalizeEmail,
+} from './_security.js';
 
 export default async function handler(req, res) {
+    if (handleOptions(req, res)) return;
+    setCorsHeaders(req, res);
+    if (!ensureOriginAllowed(req, res)) return;
+
     // Create client
     const supabaseAdmin = createClient(
         process.env.SUPABASE_URL,
@@ -8,19 +19,29 @@ export default async function handler(req, res) {
         { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Allow from same origin only
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { email, password, role, profile } = req.body ?? {};
+    const authUser = await getAuthUserFromRequest(req);
+    if (!authUser) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-    if (!email || !password || !role || !profile) {
+    const { data: adminRow } = await supabaseAdmin
+        .from('admins')
+        .select('auth_user_id')
+        .eq('auth_user_id', authUser.id)
+        .maybeSingle();
+
+    if (!adminRow) {
+        return res.status(403).json({ error: 'Only admins can create users.' });
+    }
+
+    const { email, password, role, profile } = req.body ?? {};
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail || !password || !role || !profile) {
         return res.status(400).json({ error: 'Missing required fields: email, password, role, profile' });
     }
 
@@ -31,7 +52,7 @@ export default async function handler(req, res) {
     try {
         // 1. Create auth user
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-            email,
+            email: normalizedEmail,
             password,
             email_confirm: true,
             user_metadata: { role, name: profile.name },
@@ -51,7 +72,7 @@ export default async function handler(req, res) {
             const { error } = await supabaseAdmin.from('students').insert([
                 {
                     auth_user_id: authUserId,
-                    email,
+                    email: normalizedEmail,
                     name: profile.name,
                     roll_number: profile.rollNumber,
                     program: profile.program,
@@ -77,7 +98,7 @@ export default async function handler(req, res) {
             const { error } = await supabaseAdmin.from('faculty').insert([
                 {
                     auth_user_id: authUserId,
-                    email,
+                    email: normalizedEmail,
                     name: profile.name,
                     employee_id: profile.employeeId,
                     department: profile.department,
@@ -102,7 +123,7 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'Failed to create profile: ' + insertError.message });
         }
 
-        return res.status(200).json({ success: true, userId: authUserId, email, role });
+        return res.status(200).json({ success: true, userId: authUserId, email: normalizedEmail, role });
     } catch (err) {
         console.error('Unexpected error:', err);
         return res.status(500).json({ error: 'Internal server error' });

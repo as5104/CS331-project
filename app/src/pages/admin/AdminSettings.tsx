@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import {
-    Settings, Bell, Shield, Globe, Database,
-    Mail, Save, Check,
+    Bell, Shield, Globe, Database,
+    Save, Check,
 } from 'lucide-react';
 
 interface AdminSettingsProps {

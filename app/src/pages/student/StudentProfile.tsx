@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { RecoveryEmailPanel } from '@/components/security/RecoveryEmailPanel';
 import type { Student } from '@/types';
 import {
   User, Mail, Phone, Calendar, BookOpen,
@@ -188,6 +189,11 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
                 <InfoRow icon={Building} label="Institution" value={student?.institution} />
                 <InfoRow icon={Hash} label="Roll Number" value={student?.rollNumber} />
               </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="lg:col-span-2">
+              <RecoveryEmailPanel tone="student" />
             </motion.div>
 
           </div>

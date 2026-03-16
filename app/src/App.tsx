@@ -22,6 +22,7 @@ import { FacultyAttendance } from '@/pages/faculty/FacultyAttendance';
 
 // Admin Pages
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+import { AdminProfile } from '@/pages/admin/AdminProfile';
 import { UserManagement } from '@/pages/admin/UserManagement';
 import { AdminWorkflows } from '@/pages/admin/AdminWorkflows';
 import { AdminMonitor } from '@/pages/admin/AdminMonitor';
@@ -80,7 +81,7 @@ function AppContent() {
       case '/profile':
         if (role === 'student') return <StudentProfile onNavigate={handleNavigate} />;
         if (role === 'faculty') return <FacultyProfile onNavigate={handleNavigate} />;
-        return <AdminDashboard onNavigate={handleNavigate} />;
+        return <AdminProfile onNavigate={handleNavigate} />;
 
       case '/courses':
         if (role === 'student') return <StudentProfile onNavigate={handleNavigate} />;

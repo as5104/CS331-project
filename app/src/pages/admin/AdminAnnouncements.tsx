@@ -5,7 +5,7 @@ import { mockAnnouncements } from '@/data/mockData';
 import type { Announcement } from '@/types';
 import {
     Megaphone, Plus, X, Send, Users, GraduationCap,
-    UserCircle, Globe, AlertCircle, ChevronDown,
+    UserCircle, Globe, ChevronDown,
 } from 'lucide-react';
 
 interface AdminAnnouncementsProps {
