@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { RecoveryEmailPanel } from '@/components/security/RecoveryEmailPanel';
 import type { Admin } from '@/types';
 import { User, Mail, Building, Hash, Shield } from 'lucide-react';
 
@@ -102,14 +101,6 @@ export function AdminProfile({ onNavigate }: AdminProfileProps) {
         </motion.div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="mt-6"
-      >
-        <RecoveryEmailPanel tone="admin" />
-      </motion.div>
     </DashboardLayout>
   );
 }

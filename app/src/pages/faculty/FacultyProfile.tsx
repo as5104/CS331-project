@@ -1,7 +1,6 @@
 ﻿import { motion } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { RecoveryEmailPanel } from '@/components/security/RecoveryEmailPanel';
 import type { Faculty } from '@/types';
 import {
     User, Mail, Phone, Calendar, BookOpen,
@@ -113,11 +112,6 @@ export function FacultyProfile({ onNavigate }: FacultyProfileProps) {
                     </div>
                 </motion.div>
             </div>
-
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                className="mt-6">
-                <RecoveryEmailPanel tone="faculty" />
-            </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="mt-6 bg-card rounded-xl border border-border p-6">

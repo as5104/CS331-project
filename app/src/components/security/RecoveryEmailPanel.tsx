@@ -7,6 +7,7 @@ type RecoveryTone = 'student' | 'faculty' | 'admin';
 
 interface RecoveryEmailPanelProps {
   tone: RecoveryTone;
+  onStatusChange?: (status: RecoveryStatus) => void;
 }
 
 const toneStyles: Record<RecoveryTone, { badge: string; button: string; buttonGhost: string; ring: string; iconBg: string; iconText: string }> = {
@@ -36,7 +37,7 @@ const toneStyles: Record<RecoveryTone, { badge: string; button: string; buttonGh
   },
 };
 
-interface RecoveryStatus {
+export interface RecoveryStatus {
   recoveryEmail: string | null;
   recoveryEmailVerified: boolean;
   recoveryEmailVerifiedAt: string | null;
@@ -60,7 +61,7 @@ async function getAuthHeaders() {
   };
 }
 
-export function RecoveryEmailPanel({ tone }: RecoveryEmailPanelProps) {
+export function RecoveryEmailPanel({ tone, onStatusChange }: RecoveryEmailPanelProps) {
   const styles = toneStyles[tone];
   const [status, setStatus] = useState<RecoveryStatus>({
     recoveryEmail: null,
@@ -92,11 +93,13 @@ export function RecoveryEmailPanel({ tone }: RecoveryEmailPanelProps) {
       const res = await fetch('/api/recovery-email-status', { method: 'GET', headers });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load recovery email status.');
-      setStatus({
+      const nextStatus = {
         recoveryEmail: data.recoveryEmail ?? null,
         recoveryEmailVerified: !!data.recoveryEmailVerified,
         recoveryEmailVerifiedAt: data.recoveryEmailVerifiedAt ?? null,
-      });
+      };
+      setStatus(nextStatus);
+      onStatusChange?.(nextStatus);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load recovery email status.';
       setError(msg);

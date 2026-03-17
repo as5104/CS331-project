@@ -18,7 +18,7 @@ create table if not exists public.security_otp_challenges (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid not null references auth.users(id) on delete cascade,
   target_email text not null,
-  purpose text not null check (purpose in ('verify_recovery_email', 'password_reset')),
+  purpose text not null check (purpose in ('verify_recovery_email', 'password_reset', 'password_change')),
   code_hash text not null,
   expires_at timestamptz not null,
   attempts integer not null default 0,
@@ -34,9 +34,23 @@ create index if not exists idx_security_otp_auth_purpose_created
 create index if not exists idx_security_otp_target_email
   on public.security_otp_challenges (target_email);
 
+do $$
+begin
+  alter table public.security_otp_challenges
+    drop constraint if exists security_otp_challenges_purpose_check;
+
+  alter table public.security_otp_challenges
+    add constraint security_otp_challenges_purpose_check
+    check (purpose in ('verify_recovery_email', 'password_reset', 'password_change'));
+exception
+  when duplicate_object then
+    null;
+end $$;
+
 create table if not exists public.security_password_reset_sessions (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid not null references auth.users(id) on delete cascade,
+  purpose text not null default 'password_reset' check (purpose in ('password_reset', 'password_change')),
   token_hash text not null unique,
   expires_at timestamptz not null,
   consumed_at timestamptz,
@@ -45,6 +59,35 @@ create table if not exists public.security_password_reset_sessions (
 
 create index if not exists idx_password_reset_auth_created
   on public.security_password_reset_sessions (auth_user_id, created_at desc);
+
+alter table public.security_password_reset_sessions
+  add column if not exists purpose text;
+
+update public.security_password_reset_sessions
+set purpose = 'password_reset'
+where purpose is null;
+
+alter table public.security_password_reset_sessions
+  alter column purpose set default 'password_reset';
+
+alter table public.security_password_reset_sessions
+  alter column purpose set not null;
+
+do $$
+begin
+  alter table public.security_password_reset_sessions
+    drop constraint if exists security_password_reset_sessions_purpose_check;
+
+  alter table public.security_password_reset_sessions
+    add constraint security_password_reset_sessions_purpose_check
+    check (purpose in ('password_reset', 'password_change'));
+exception
+  when duplicate_object then
+    null;
+end $$;
+
+create index if not exists idx_password_reset_auth_purpose_created
+  on public.security_password_reset_sessions (auth_user_id, purpose, created_at desc);
 
 create table if not exists public.security_audit_log (
   id bigserial primary key,
@@ -68,6 +111,3 @@ alter table public.account_security enable row level security;
 alter table public.security_otp_challenges enable row level security;
 alter table public.security_password_reset_sessions enable row level security;
 alter table public.security_audit_log enable row level security;
-
--- No direct client access policies are added intentionally.
--- These tables should be accessed only from trusted server-side endpoints.

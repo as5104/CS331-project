@@ -11,6 +11,7 @@ import {
   AlertCircle,
   User,
   Settings,
+  LogOut,
 } from 'lucide-react';
 import { mockNotifications } from '@/data/mockData';
 import type { Notification } from '@/types';
@@ -24,34 +25,36 @@ interface HeaderProps {
 const navItemsByRole = {
   student: [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'My Profile', path: '/profile' },
     { label: 'Assignments', path: '/assignments' },
-    { label: 'Attendance', path: '/attendance' },
+    { label: 'Attendance', path: '/view-attendance' },
     { label: 'CGPA Calculator', path: '/cgpa-calculator' },
     { label: 'Re-evaluation', path: '/reevaluation' },
     { label: 'Notifications', path: '/notifications' },
+    { label: 'Profile', path: '/profile' },
+    { label: 'Settings', path: '/settings' },
   ],
   faculty: [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'My Profile', path: '/profile' },
     { label: 'My Courses', path: '/courses' },
     { label: 'Review Assignments', path: '/review' },
     { label: 'Mark Attendance', path: '/attendance' },
     { label: 'Notifications', path: '/notifications' },
+    { label: 'Profile', path: '/profile' },
+    { label: 'Settings', path: '/settings' },
   ],
   admin: [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'My Profile', path: '/profile' },
     { label: 'User Management', path: '/users' },
     { label: 'Workflows', path: '/workflows' },
     { label: 'System Monitor', path: '/monitor' },
     { label: 'Announcements', path: '/announcements' },
+    { label: 'Profile', path: '/profile' },
     { label: 'Settings', path: '/settings' },
   ],
 } as const;
 
 export function Header({ title, onNavigate, onMenuClick }: HeaderProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -311,13 +314,35 @@ export function Header({ title, onNavigate, onMenuClick }: HeaderProps) {
                       </span>
                     </div>
                     <div className="p-2">
-                      <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors">
+                      <button
+                        onClick={() => {
+                          onNavigate('/profile');
+                          setShowProfile(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
+                      >
                         <User className="w-4 h-4" />
-                        Profile Settings
+                        Profile
                       </button>
-                      <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors">
+                      <button
+                        onClick={() => {
+                          onNavigate('/settings');
+                          setShowProfile(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
+                      >
                         <Settings className="w-4 h-4" />
-                        Preferences
+                        Settings
+                      </button>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowProfile(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
                       </button>
                     </div>
                   </motion.div>

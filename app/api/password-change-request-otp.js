@@ -3,8 +3,6 @@ import {
   setCorsHeaders,
   ensureOriginAllowed,
   getAuthUserFromRequest,
-  normalizeEmail,
-  isValidEmail,
   ensureAccountSecurityRecord,
   enforceOtpRateLimit,
   enforceOtpDailyLimit,
@@ -15,6 +13,7 @@ import {
   logSecurityEvent,
   verifyUserPassword,
   isIpRateLimited,
+  normalizeEmail,
 } from './_security.js';
 
 export default async function handler(req, res) {
@@ -29,11 +28,11 @@ export default async function handler(req, res) {
   try {
     const authUser = await getAuthUserFromRequest(req);
     if (!authUser) return res.status(401).json({ error: 'Unauthorized' });
-    const ipAddress = getClientIp(req);
 
+    const ipAddress = getClientIp(req);
     const ipLimited = await isIpRateLimited({
       ipAddress,
-      eventType: 'recovery_email_request_received',
+      eventType: 'password_change_request_received',
       windowMinutes: 15,
       maxEvents: 20,
     });
@@ -42,69 +41,65 @@ export default async function handler(req, res) {
     }
 
     await logSecurityEvent({
-      eventType: 'recovery_email_request_received',
+      eventType: 'password_change_request_received',
       authUserId: authUser.id,
       actorEmail: authUser.email,
       targetEmail: null,
-      purpose: 'verify_recovery_email',
+      purpose: 'password_change',
       ipAddress,
       metadata: { userAgent: req.headers['user-agent'] || null },
     });
 
-    const recoveryEmail = normalizeEmail(req.body?.recoveryEmail);
     const currentPassword = String(req.body?.currentPassword || '');
-    if (!recoveryEmail || !isValidEmail(recoveryEmail)) {
-      return res.status(400).json({ error: 'Enter a valid recovery email address.' });
-    }
     if (!currentPassword) {
       return res.status(400).json({ error: 'Current password is required.' });
     }
 
-    const universityEmail = normalizeEmail(authUser.email || '');
-    if (recoveryEmail === universityEmail) {
-      return res.status(400).json({ error: 'Recovery email must be different from your university email.' });
+    const security = await ensureAccountSecurityRecord({
+      authUserId: authUser.id,
+      fallbackEmail: authUser.email,
+      fallbackRole: authUser.user_metadata?.role || null,
+    });
+
+    if (!security?.recovery_email || !security?.recovery_email_verified) {
+      return res.status(400).json({ error: 'Verify your recovery email before changing password.' });
     }
 
+    const universityEmail = normalizeEmail(authUser.email || security.user_email || '');
     const validPassword = await verifyUserPassword(universityEmail, currentPassword);
     if (!validPassword) {
       await logSecurityEvent({
-        eventType: 'recovery_email_current_password_invalid',
+        eventType: 'password_change_current_password_invalid',
         authUserId: authUser.id,
         actorEmail: authUser.email,
-        targetEmail: recoveryEmail || null,
-        purpose: 'verify_recovery_email',
+        targetEmail: security.recovery_email,
+        purpose: 'password_change',
         ipAddress,
         metadata: { userAgent: req.headers['user-agent'] || null },
       });
       return res.status(401).json({ error: 'Current password is incorrect.' });
     }
 
-    await ensureAccountSecurityRecord({
-      authUserId: authUser.id,
-      fallbackEmail: authUser.email,
-      fallbackRole: authUser.user_metadata?.role || null,
-    });
-
     await enforceOtpRateLimit({
       authUserId: authUser.id,
-      purpose: 'verify_recovery_email',
+      purpose: 'password_change',
     });
     await enforceOtpDailyLimit({
       authUserId: authUser.id,
-      purpose: 'verify_recovery_email',
+      purpose: 'password_change',
     });
 
     const { challenge, code } = await createOtpChallenge({
       authUserId: authUser.id,
-      targetEmail: recoveryEmail,
-      purpose: 'verify_recovery_email',
+      targetEmail: security.recovery_email,
+      purpose: 'password_change',
     });
 
     try {
       await sendOtpEmail({
-        to: recoveryEmail,
+        to: security.recovery_email,
         otp: code,
-        purpose: 'verify_recovery_email',
+        purpose: 'password_change',
       });
     } catch (sendError) {
       await invalidateChallenge(challenge.id);
@@ -112,18 +107,18 @@ export default async function handler(req, res) {
     }
 
     await logSecurityEvent({
-      eventType: 'recovery_email_otp_requested',
+      eventType: 'password_change_otp_requested',
       authUserId: authUser.id,
       actorEmail: authUser.email,
-      targetEmail: recoveryEmail,
-      purpose: 'verify_recovery_email',
+      targetEmail: security.recovery_email,
+      purpose: 'password_change',
       ipAddress,
       metadata: { userAgent: req.headers['user-agent'] || null },
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Verification OTP sent to your recovery email.',
+      message: 'OTP sent to your verified recovery email.',
     });
   } catch (error) {
     const statusCode = error?.statusCode || 500;

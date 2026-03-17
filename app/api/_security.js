@@ -6,9 +6,11 @@ const RESET_TOKEN_TTL_MINUTES = 15;
 const OTP_MAX_ATTEMPTS = 6;
 const OTP_COOLDOWN_SECONDS = 45;
 const OTP_MAX_REQUESTS_PER_HOUR = 8;
+const OTP_MAX_REQUESTS_PER_DAY = 24;
 
 let cachedAdmin = null;
 let cachedAuthClient = null;
+const fallbackIpBuckets = new Map();
 
 function nowIso() {
   return new Date().toISOString();
@@ -66,8 +68,16 @@ export function handleOptions(req, res) {
   return false;
 }
 
-export function ensureOriginAllowed(req, res) {
-  if (!req.headers.origin) return true;
+export function ensureOriginAllowed(req, res, options = {}) {
+  const requireOrigin = options.requireOrigin === true;
+  const origin = req.headers.origin || '';
+
+  if (!origin) {
+    if (!requireOrigin) return true;
+    res.status(403).json({ error: 'Origin header is required' });
+    return false;
+  }
+
   if (resolveCorsOrigin(req)) return true;
   res.status(403).json({ error: 'Origin not allowed' });
   return false;
@@ -337,6 +347,24 @@ export async function enforceOtpRateLimit({ authUserId, purpose }) {
   }
 }
 
+export async function enforceOtpDailyLimit({ authUserId, purpose, maxPerDay = OTP_MAX_REQUESTS_PER_DAY }) {
+  const supabaseAdmin = createSupabaseAdmin();
+  const dayCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { count } = await supabaseAdmin
+    .from('security_otp_challenges')
+    .select('id', { count: 'exact', head: true })
+    .eq('auth_user_id', authUserId)
+    .eq('purpose', purpose)
+    .gte('created_at', dayCutoff);
+
+  if ((count || 0) >= maxPerDay) {
+    const err = new Error('Daily OTP limit reached. Please try again later.');
+    err.statusCode = 429;
+    throw err;
+  }
+}
+
 export async function createOtpChallenge({ authUserId, targetEmail, purpose }) {
   const supabaseAdmin = createSupabaseAdmin();
   const code = generateOtpCode();
@@ -422,7 +450,11 @@ export async function verifyOtpChallenge({ authUserId, purpose, otpCode, targetE
   return { ok: true, challenge };
 }
 
-export async function createPasswordResetSession(authUserId) {
+export async function createPasswordResetSession({ authUserId, purpose = 'password_reset' }) {
+  if (!['password_reset', 'password_change'].includes(purpose)) {
+    throw new Error('Invalid reset session purpose');
+  }
+
   const supabaseAdmin = createSupabaseAdmin();
   const token = crypto.randomBytes(32).toString('hex');
   const tokenHash = hmacSha256(token);
@@ -432,12 +464,14 @@ export async function createPasswordResetSession(authUserId) {
     .from('security_password_reset_sessions')
     .update({ consumed_at: nowIso() })
     .eq('auth_user_id', authUserId)
+    .eq('purpose', purpose)
     .is('consumed_at', null);
 
   const { error } = await supabaseAdmin
     .from('security_password_reset_sessions')
     .insert([{
       auth_user_id: authUserId,
+      purpose,
       token_hash: tokenHash,
       expires_at: expiresAt,
       consumed_at: null,
@@ -445,16 +479,21 @@ export async function createPasswordResetSession(authUserId) {
     }]);
 
   if (error) throw new Error(error.message);
-  return { token, expiresAt };
+  return { token, expiresAt, purpose };
 }
 
-export async function consumePasswordResetSession(resetToken) {
+export async function consumePasswordResetSession(resetToken, expectedPurpose = 'password_reset') {
+  if (!['password_reset', 'password_change'].includes(expectedPurpose)) {
+    throw new Error('Invalid expected reset session purpose');
+  }
+
   const supabaseAdmin = createSupabaseAdmin();
   const tokenHash = hmacSha256(resetToken);
   const { data: session } = await supabaseAdmin
     .from('security_password_reset_sessions')
     .select('*')
     .eq('token_hash', tokenHash)
+    .eq('purpose', expectedPurpose)
     .is('consumed_at', null)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -472,6 +511,50 @@ export async function consumePasswordResetSession(resetToken) {
     .eq('id', session.id);
 
   return session;
+}
+
+export async function revokeAllUserSessions({ authUserId, accessToken = null, email = null, passwordForSignout = null }) {
+  if (!authUserId) return { revoked: false, reason: 'missing_user' };
+
+  const supabaseAdmin = createSupabaseAdmin();
+  let tokenToUse = typeof accessToken === 'string' ? accessToken.trim() : '';
+  let resolvedEmail = normalizeEmail(email || '');
+
+  if (!resolvedEmail && passwordForSignout) {
+    try {
+      const { data, error } = await supabaseAdmin.auth.admin.getUserById(authUserId);
+      if (!error && data?.user?.email) {
+        resolvedEmail = normalizeEmail(data.user.email);
+      }
+    } catch {
+      resolvedEmail = '';
+    }
+  }
+
+  if (!tokenToUse && resolvedEmail && passwordForSignout) {
+    try {
+      const authClient = createAuthClient();
+      const { data, error } = await authClient.auth.signInWithPassword({
+        email: resolvedEmail,
+        password: String(passwordForSignout),
+      });
+      if (!error && data?.session?.access_token) {
+        tokenToUse = data.session.access_token;
+      }
+    } catch {
+      tokenToUse = '';
+    }
+  }
+
+  if (!tokenToUse) {
+    return { revoked: false, reason: 'token_unavailable' };
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.signOut(tokenToUse, 'global');
+  if (error) {
+    return { revoked: false, reason: error.message || 'signout_failed' };
+  }
+  return { revoked: true };
 }
 
 export async function markRecoveryEmailVerified(authUserId, recoveryEmail) {
@@ -503,13 +586,24 @@ export async function sendOtpEmail({ to, otp, purpose }) {
     throw new Error('Email sender is not configured. Set BREVO_API_KEY and SECURITY_FROM_EMAIL.');
   }
 
-  const purposeLabel = purpose === 'verify_recovery_email'
-    ? 'Verify your recovery email'
-    : 'Reset your UniAdmin password';
+  const purposeMeta = purpose === 'verify_recovery_email'
+    ? {
+      label: 'Verify your recovery email',
+      subject: 'Recovery Email Verification',
+    }
+    : purpose === 'password_change'
+      ? {
+        label: 'Approve your UniAdmin password change',
+        subject: 'Password Change',
+      }
+      : {
+        label: 'Reset your UniAdmin password',
+        subject: 'Password Reset',
+      };
 
   const html = `
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;padding:24px;">
-    <h2 style="margin-top:0;color:#111827;">${purposeLabel}</h2>
+    <h2 style="margin-top:0;color:#111827;">${purposeMeta.label}</h2>
     <p style="color:#374151;line-height:1.5;">Use this one-time password (OTP) to continue:</p>
     <div style="font-size:32px;letter-spacing:8px;font-weight:700;margin:18px 0;color:#0f172a;">${otp}</div>
     <p style="color:#374151;line-height:1.5;">This OTP expires in ${OTP_TTL_MINUTES} minutes and can be used only once.</p>
@@ -529,7 +623,7 @@ export async function sendOtpEmail({ to, otp, purpose }) {
         name: fromName,
       },
       to: [{ email: normalizedTo }],
-      subject: `UniAdmin OTP: ${purpose === 'password_reset' ? 'Password Reset' : 'Recovery Email Verification'}`,
+      subject: `UniAdmin OTP: ${purposeMeta.subject}`,
       htmlContent: html,
     }),
   });
@@ -540,12 +634,20 @@ export async function sendOtpEmail({ to, otp, purpose }) {
 }
 
 export async function consumeAllPasswordResetOtps(authUserId) {
+  return consumeOtpChallengesByPurpose(authUserId, 'password_reset');
+}
+
+export async function consumeAllPasswordChangeOtps(authUserId) {
+  return consumeOtpChallengesByPurpose(authUserId, 'password_change');
+}
+
+async function consumeOtpChallengesByPurpose(authUserId, purpose) {
   const supabaseAdmin = createSupabaseAdmin();
   await supabaseAdmin
     .from('security_otp_challenges')
     .update({ consumed_at: nowIso() })
     .eq('auth_user_id', authUserId)
-    .eq('purpose', 'password_reset')
+    .eq('purpose', purpose)
     .is('consumed_at', null);
 }
 
@@ -570,8 +672,30 @@ export async function isIpRateLimited({ ipAddress, eventType, windowMinutes, max
       .gte('created_at', cutoff);
     return (count || 0) >= maxEvents;
   } catch {
-    return false;
+    return fallbackIsIpRateLimited({ ipAddress, eventType, windowMinutes, maxEvents });
   }
+}
+
+function fallbackIsIpRateLimited({ ipAddress, eventType, windowMinutes, maxEvents }) {
+  const key = `${eventType}:${ipAddress}`;
+  const now = Date.now();
+  const cutoff = now - windowMinutes * 60 * 1000;
+
+  const existing = fallbackIpBuckets.get(key) || [];
+  const filtered = existing.filter((timestamp) => timestamp >= cutoff);
+  const limited = filtered.length >= maxEvents;
+  filtered.push(now);
+  fallbackIpBuckets.set(key, filtered);
+
+  if (fallbackIpBuckets.size > 2000) {
+    for (const [bucketKey, timestamps] of fallbackIpBuckets.entries()) {
+      const recent = timestamps.filter((timestamp) => timestamp >= cutoff);
+      if (recent.length === 0) fallbackIpBuckets.delete(bucketKey);
+      else fallbackIpBuckets.set(bucketKey, recent);
+    }
+  }
+
+  return limited;
 }
 
 export function getCookieValue(req, name) {
@@ -583,24 +707,24 @@ export function getCookieValue(req, name) {
   return decodeURIComponent(found.slice(name.length + 1));
 }
 
-export function setHttpOnlyCookie(res, name, value, maxAgeSeconds) {
+export function setHttpOnlyCookie(res, name, value, maxAgeSeconds, path = '/api/password-reset-complete') {
   const parts = [
     `${name}=${encodeURIComponent(value)}`,
     'HttpOnly',
     'SameSite=Strict',
-    'Path=/api/password-reset-complete',
+    `Path=${path}`,
     `Max-Age=${Math.max(1, maxAgeSeconds)}`,
   ];
   if (process.env.NODE_ENV === 'production') parts.push('Secure');
   res.setHeader('Set-Cookie', parts.join('; '));
 }
 
-export function clearHttpOnlyCookie(res, name) {
+export function clearHttpOnlyCookie(res, name, path = '/api/password-reset-complete') {
   const parts = [
     `${name}=`,
     'HttpOnly',
     'SameSite=Strict',
-    'Path=/api/password-reset-complete',
+    `Path=${path}`,
     'Max-Age=0',
   ];
   if (process.env.NODE_ENV === 'production') parts.push('Secure');

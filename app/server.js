@@ -15,6 +15,9 @@ const [
     { default: passwordResetRequestOtpHandler },
     { default: passwordResetVerifyOtpHandler },
     { default: passwordResetCompleteHandler },
+    { default: passwordChangeRequestOtpHandler },
+    { default: passwordChangeVerifyOtpHandler },
+    { default: passwordChangeCompleteHandler },
 ] = await Promise.all([
     import('./api/create-user.js'),
     import('./api/recovery-email-status.js'),
@@ -23,6 +26,9 @@ const [
     import('./api/password-reset-request-otp.js'),
     import('./api/password-reset-verify-otp.js'),
     import('./api/password-reset-complete.js'),
+    import('./api/password-change-request-otp.js'),
+    import('./api/password-change-verify-otp.js'),
+    import('./api/password-change-complete.js'),
 ]);
 
 const app = express();
@@ -63,6 +69,15 @@ app.post('/api/password-reset-verify-otp', (req, res) => passwordResetVerifyOtpH
 
 app.options('/api/password-reset-complete', (req, res) => passwordResetCompleteHandler(req, res));
 app.post('/api/password-reset-complete', (req, res) => passwordResetCompleteHandler(req, res));
+
+app.options('/api/password-change-request-otp', (req, res) => passwordChangeRequestOtpHandler(req, res));
+app.post('/api/password-change-request-otp', (req, res) => passwordChangeRequestOtpHandler(req, res));
+
+app.options('/api/password-change-verify-otp', (req, res) => passwordChangeVerifyOtpHandler(req, res));
+app.post('/api/password-change-verify-otp', (req, res) => passwordChangeVerifyOtpHandler(req, res));
+
+app.options('/api/password-change-complete', (req, res) => passwordChangeCompleteHandler(req, res));
+app.post('/api/password-change-complete', (req, res) => passwordChangeCompleteHandler(req, res));
 
 const PORT = process.env.API_PORT || 3001;
 app.listen(PORT, () => {

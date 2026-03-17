@@ -28,6 +28,7 @@ import { AdminWorkflows } from '@/pages/admin/AdminWorkflows';
 import { AdminMonitor } from '@/pages/admin/AdminMonitor';
 import { AdminAnnouncements } from '@/pages/admin/AdminAnnouncements';
 import { AdminSettings } from '@/pages/admin/AdminSettings';
+import { AccountSettings } from '@/pages/shared/AccountSettings';
 
 import type { UserRole } from '@/types';
 
@@ -146,7 +147,7 @@ function AppContent() {
 
       case '/settings':
         if (role === 'admin') return <AdminSettings onNavigate={handleNavigate} />;
-        return <AdminDashboard onNavigate={handleNavigate} />;
+        return <AccountSettings onNavigate={handleNavigate} />;
 
       default:
         if (role === 'admin') return <AdminDashboard onNavigate={handleNavigate} />;

@@ -2,10 +2,11 @@ import {
   handleOptions,
   setCorsHeaders,
   ensureOriginAllowed,
+  getAuthUserFromRequest,
   consumePasswordResetSession,
   createSupabaseAdmin,
   isStrongPassword,
-  consumeAllPasswordResetOtps,
+  consumeAllPasswordChangeOtps,
   revokeAllUserSessions,
   getClientIp,
   logSecurityEvent,
@@ -16,19 +17,25 @@ import {
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
   setCorsHeaders(req, res);
-  if (!ensureOriginAllowed(req, res, { requireOrigin: true })) return;
+  if (!ensureOriginAllowed(req, res)) return;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const resetTokenFromCookie = getCookieValue(req, 'password_reset_session');
-    const resetToken = resetTokenFromCookie;
+    const authUser = await getAuthUserFromRequest(req);
+    if (!authUser) return res.status(401).json({ error: 'Unauthorized' });
+
+    const changeToken = getCookieValue(req, 'password_change_session');
+    const authHeader = req.headers.authorization || '';
+    const currentAccessToken = authHeader.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length).trim()
+      : '';
     const newPassword = String(req.body?.newPassword || '');
 
-    if (!resetToken) {
-      return res.status(400).json({ error: 'Invalid reset session.' });
+    if (!changeToken) {
+      return res.status(400).json({ error: 'Invalid password change session.' });
     }
 
     if (!isStrongPassword(newPassword)) {
@@ -37,10 +44,15 @@ export default async function handler(req, res) {
       });
     }
 
-    const session = await consumePasswordResetSession(resetToken, 'password_reset');
+    const session = await consumePasswordResetSession(changeToken, 'password_change');
     if (!session?.auth_user_id) {
-      clearHttpOnlyCookie(res, 'password_reset_session');
-      return res.status(400).json({ error: 'Invalid or expired reset session.' });
+      clearHttpOnlyCookie(res, 'password_change_session', '/api/password-change-complete');
+      return res.status(400).json({ error: 'Invalid or expired password change session.' });
+    }
+
+    if (session.auth_user_id !== authUser.id) {
+      clearHttpOnlyCookie(res, 'password_change_session', '/api/password-change-complete');
+      return res.status(403).json({ error: 'Session mismatch. Please try again.' });
     }
 
     const supabaseAdmin = createSupabaseAdmin();
@@ -49,22 +61,24 @@ export default async function handler(req, res) {
     });
 
     if (updateError) {
-      return res.status(500).json({ error: updateError.message || 'Failed to reset password.' });
+      return res.status(500).json({ error: updateError.message || 'Failed to change password.' });
     }
 
     const revokeResult = await revokeAllUserSessions({
       authUserId: session.auth_user_id,
+      accessToken: currentAccessToken,
+      email: authUser.email || null,
       passwordForSignout: newPassword,
     });
 
-    clearHttpOnlyCookie(res, 'password_reset_session');
-    await consumeAllPasswordResetOtps(session.auth_user_id);
+    clearHttpOnlyCookie(res, 'password_change_session', '/api/password-change-complete');
+    await consumeAllPasswordChangeOtps(session.auth_user_id);
     await logSecurityEvent({
-      eventType: 'password_reset_completed',
+      eventType: 'password_change_completed',
       authUserId: session.auth_user_id,
-      actorEmail: null,
+      actorEmail: authUser.email || null,
       targetEmail: null,
-      purpose: 'password_reset',
+      purpose: 'password_change',
       ipAddress: getClientIp(req),
       metadata: {
         userAgent: req.headers['user-agent'] || null,
@@ -84,7 +98,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       sessionRevoked: true,
-      message: 'Password updated successfully. You can now sign in with your new password.',
+      message: 'Password changed successfully.',
     });
   } catch (error) {
     return res.status(500).json({ error: error?.message || 'Internal server error' });

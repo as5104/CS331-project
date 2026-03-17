@@ -35,6 +35,9 @@ or separate:
 - `POST /api/password-reset-request-otp`
 - `POST /api/password-reset-verify-otp`
 - `POST /api/password-reset-complete`
+- `POST /api/password-change-request-otp` (auth required)
+- `POST /api/password-change-verify-otp` (auth required)
+- `POST /api/password-change-complete` (auth required)
 
 ## 5) Security notes
 
@@ -43,4 +46,7 @@ or separate:
 - Recovery email add/change requires current-password verification.
 - Password reset session token is short-lived and one-time use.
 - Reset session is stored in a secure HttpOnly cookie (not exposed to frontend JS).
+- Password change requires current password + OTP to verified recovery email.
 - Password reset request endpoint uses a generic response to reduce account enumeration risk.
+- OTP request endpoints enforce cooldown + hourly + daily limits.
+- Reset endpoints now require allowed browser `Origin` headers (configure `ALLOWED_ORIGINS` correctly).
