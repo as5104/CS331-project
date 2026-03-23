@@ -4,7 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import type { UserRole } from '@/types';
 import {
   LayoutDashboard,
-  User,
   BookOpen,
   FileText,
   Calendar,
@@ -33,7 +32,6 @@ interface NavItem {
 const navItems: Record<UserRole, NavItem[]> = {
   student: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { label: 'My Profile', icon: User, path: '/profile' },
     { label: 'Assignments', icon: FileText, path: '/assignments' },
     { 
       label: 'Attendance', 
@@ -49,7 +47,6 @@ const navItems: Record<UserRole, NavItem[]> = {
   ],
   faculty: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { label: 'My Profile', icon: User, path: '/profile' },
     { label: 'My Courses', icon: BookOpen, path: '/courses' },
     { label: 'Review Assignments', icon: ClipboardCheck, path: '/review' },
     { label: 'Mark Attendance', icon: Calendar, path: '/attendance' },

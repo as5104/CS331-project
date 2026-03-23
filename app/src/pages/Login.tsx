@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import { ForgotPasswordModal } from '@/components/security/ForgotPasswordModal';
 import {
   GraduationCap,
   Mail,
@@ -59,6 +60,7 @@ export function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState('');
   const [step, setStep] = useState<'role' | 'credentials'>('role');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -459,7 +461,11 @@ export function Login({ onLogin }: LoginProps) {
                           </div>
                           <span className="text-gray-600 font-medium group-hover:text-gray-900 transition-colors">Remember me</span>
                         </label>
-                        <button type="button" className="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-all">
+                        <button
+                          type="button"
+                          onClick={() => setIsForgotPasswordOpen(true)}
+                          className="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-all"
+                        >
                           Forgot password?
                         </button>
                       </div>
@@ -684,6 +690,10 @@ export function Login({ onLogin }: LoginProps) {
           </div>
         </div>
       </footer>
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+      />
     </div>
   );
 }

@@ -62,7 +62,7 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
   return (
     <DashboardLayout title="My Profile" activePath="/profile" onNavigate={onNavigate}>
 
-      {/* ── Profile Hero ──────────────────────────────────────────────────── */}
+      {/* Profile Hero */}
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 sm:p-8 text-white mb-6"
@@ -125,7 +125,7 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
         </div>
       </motion.div>
 
-      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-border">
         {tabs.map(tab => (
           <button
@@ -142,7 +142,7 @@ export function StudentProfile({ onNavigate }: StudentProfileProps) {
         ))}
       </div>
 
-      {/* ── Tab Content ───────────────────────────────────────────────────── */}
+      {/* Tab Content */}
       <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
 
         {/* Personal Tab */}

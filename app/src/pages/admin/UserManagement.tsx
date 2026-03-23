@@ -164,9 +164,16 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
 
         const isStudent = modal === 'add-student';
         try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData.session?.access_token;
+            if (!accessToken) throw new Error('Session expired. Please sign in again.');
+
             const res = await fetch('/api/create-user', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
                 body: JSON.stringify({
                     email: generatedEmail,
                     password: generatedPassword,

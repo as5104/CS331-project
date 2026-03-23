@@ -1,17 +1,32 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ChangePasswordPanel } from '@/components/security/ChangePasswordPanel';
+import { RecoveryEmailPanel, type RecoveryStatus } from '@/components/security/RecoveryEmailPanel';
 import {
-    Settings, Bell, Shield, Globe, Database,
-    Mail, Save, Check,
+    Bell, Shield, Globe, Database,
+    Save, Check,
 } from 'lucide-react';
 
 interface AdminSettingsProps {
     onNavigate: (path: string) => void;
 }
 
+function maskEmail(email: string | null) {
+    if (!email) return null;
+    const [name = '', domain = ''] = email.split('@');
+    if (!name || !domain) return email;
+    if (name.length <= 2) return `${name[0] || '*'}*@${domain}`;
+    return `${name[0]}${'*'.repeat(Math.max(2, name.length - 2))}${name[name.length - 1]}@${domain}`;
+}
+
 export function AdminSettings({ onNavigate }: AdminSettingsProps) {
     const [saved, setSaved] = useState(false);
+    const [recoveryStatus, setRecoveryStatus] = useState<RecoveryStatus>({
+        recoveryEmail: null,
+        recoveryEmailVerified: false,
+        recoveryEmailVerifiedAt: null,
+    });
     const [settings, setSettings] = useState({
         institutionName: 'Tech University',
         domain: 'university.edu',
@@ -173,6 +188,19 @@ export function AdminSettings({ onNavigate }: AdminSettingsProps) {
             </motion.div>
 
             <div className="space-y-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
+                >
+                    <RecoveryEmailPanel tone="admin" onStatusChange={setRecoveryStatus} />
+                    <ChangePasswordPanel
+                        tone="admin"
+                        recoveryEmailVerified={recoveryStatus.recoveryEmailVerified}
+                        recoveryEmailMasked={maskEmail(recoveryStatus.recoveryEmail)}
+                    />
+                </motion.div>
+
                 {sections.map((section, i) => (
                     <motion.div
                         key={section.title}
