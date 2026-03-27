@@ -29,6 +29,12 @@ import { AdminMonitor } from '@/pages/admin/AdminMonitor';
 import { AdminAnnouncements } from '@/pages/admin/AdminAnnouncements';
 import { AdminSettings } from '@/pages/admin/AdminSettings';
 import { AdminCourseManagement } from '@/pages/admin/AdminCourseManagement';
+import { AdminCourseTerms } from '@/pages/admin/AdminCourseTerms';
+import { AdminCourseDepartments } from '@/pages/admin/AdminCourseDepartments';
+import { AdminCoursesCatalog } from '@/pages/admin/AdminCoursesCatalog';
+import { AdminCourseEnrollments } from '@/pages/admin/AdminCourseEnrollments';
+import { AdminCourseEnrollStudents } from '@/pages/admin/AdminCourseEnrollStudents';
+import { AdminCourseEditor } from '@/pages/admin/AdminCourseEditor';
 import { AccountSettings } from '@/pages/shared/AccountSettings';
 
 import type { UserRole } from '@/types';
@@ -52,7 +58,14 @@ type PageRoute =
   | '/leave-request'
   | '/view-attendance'
   | '/cgpa-calculator'
-  | '/course-management';
+  | '/course-management'
+  | '/course-management/terms'
+  | '/course-management/departments'
+  | '/course-management/courses'
+  | '/course-management/courses/create'
+  | '/course-management/courses/edit'
+  | '/course-management/enrollments'
+  | '/course-management/enrollments/students';
 
 function AppContent() {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -105,6 +118,34 @@ function AppContent() {
 
       case '/course-management':
         if (role === 'admin') return <AdminCourseManagement onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
+
+      case '/course-management/terms':
+        if (role === 'admin') return <AdminCourseTerms onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
+
+      case '/course-management/departments':
+        if (role === 'admin') return <AdminCourseDepartments onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
+
+      case '/course-management/courses':
+        if (role === 'admin') return <AdminCoursesCatalog onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
+
+      case '/course-management/courses/create':
+        if (role === 'admin') return <AdminCourseEditor onNavigate={handleNavigate} mode="create" />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
+
+      case '/course-management/courses/edit':
+        if (role === 'admin') return <AdminCourseEditor onNavigate={handleNavigate} mode="edit" />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
+
+      case '/course-management/enrollments':
+        if (role === 'admin') return <AdminCourseEnrollments onNavigate={handleNavigate} />;
+        return <AdminDashboard onNavigate={handleNavigate} />;
+
+      case '/course-management/enrollments/students':
+        if (role === 'admin') return <AdminCourseEnrollStudents onNavigate={handleNavigate} />;
         return <AdminDashboard onNavigate={handleNavigate} />;
 
       case '/assignments':

@@ -9,6 +9,7 @@ dotenv.config();
 // Dynamically import handlers AFTER env vars are loaded
 const [
     { default: createUserHandler },
+    { default: manageUserHandler },
     { default: facultyCourseEnrollmentsHandler },
     { default: recoveryEmailStatusHandler },
     { default: recoveryEmailRequestOtpHandler },
@@ -21,6 +22,7 @@ const [
     { default: passwordChangeCompleteHandler },
 ] = await Promise.all([
     import('./api/create-user.js'),
+    import('./api/manage-user.js'),
     import('./api/faculty-course-enrollments.js'),
     import('./api/recovery-email-status.js'),
     import('./api/recovery-email-request-otp.js'),
@@ -53,6 +55,10 @@ app.use(express.json());
 
 app.options('/api/create-user', (req, res) => createUserHandler(req, res));
 app.post('/api/create-user', (req, res) => createUserHandler(req, res));
+
+app.options('/api/manage-user', (req, res) => manageUserHandler(req, res));
+app.patch('/api/manage-user', (req, res) => manageUserHandler(req, res));
+app.delete('/api/manage-user', (req, res) => manageUserHandler(req, res));
 
 app.options('/api/faculty-course-enrollments', (req, res) => facultyCourseEnrollmentsHandler(req, res));
 app.get('/api/faculty-course-enrollments', (req, res) => facultyCourseEnrollmentsHandler(req, res));

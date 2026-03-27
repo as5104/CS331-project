@@ -10,7 +10,7 @@ import {
     Users, GraduationCap, UserPlus, Search, X,
     Copy, Check, Eye, EyeOff, Loader2, CheckCircle2,
     AlertCircle, User, Phone, BookOpen,
-    UserCircle, RefreshCw, RotateCcw,
+    UserCircle, RefreshCw, RotateCcw, Pencil, Trash2,
 } from 'lucide-react';
 
 interface UserManagementProps {
@@ -20,6 +20,27 @@ interface UserManagementProps {
 type UserTab = 'students' | 'faculty';
 type ModalType = 'add-student' | 'add-faculty' | null;
 type FormSection = 'personal' | 'academic' | 'guardian' | 'credentials';
+
+interface StudentEditForm {
+    id: string;
+    name: string;
+    roll_number: string;
+    program: string;
+    department: string;
+    semester: number;
+    batch_year: string;
+    phone: string;
+}
+
+interface FacultyEditForm {
+    id: string;
+    name: string;
+    employee_id: string;
+    department: string;
+    designation: string;
+    qualification: string;
+    phone: string;
+}
 
 // Utilities
 
@@ -103,6 +124,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
     const [faculty, setFaculty] = useState<FacultyRow[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
 
     // Form state
     const [studentForm, setStudentForm] = useState<StudentAdmissionForm>(emptyStudentForm);
@@ -114,15 +136,36 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
     const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
+    const [studentEditForm, setStudentEditForm] = useState<StudentEditForm | null>(null);
+    const [facultyEditForm, setFacultyEditForm] = useState<FacultyEditForm | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; role: 'student' | 'faculty'; name: string } | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
+
+    const parseApiPayload = useCallback(async (res: Response): Promise<any> => {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return res.json();
+        }
+
+        const text = await res.text();
+        if (text.trim().startsWith('<!DOCTYPE')) {
+            return {
+                error: 'API route is not available (HTML returned). Restart API server (npm run dev:api) and try again.',
+            };
+        }
+
+        return { error: text || `Request failed with status ${res.status}` };
+    }, []);
 
     // Fetch users from Supabase
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         setLoadError(null);
 
-        const [{ data: s, error: studentsError }, { data: f, error: facultyError }] = await Promise.all([
+        const [{ data: s, error: studentsError }, { data: f, error: facultyError }, { data: d, error: departmentsError }] = await Promise.all([
             supabase.from('students').select('*').order('name'),
             supabase.from('faculty').select('*').order('name'),
+            supabase.from('departments').select('name').order('name'),
         ]);
 
         if (studentsError || facultyError) {
@@ -136,6 +179,16 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
 
         setStudents((s as StudentRow[]) || []);
         setFaculty((f as FacultyRow[]) || []);
+        if (!departmentsError && Array.isArray(d)) {
+            const names = Array.from(
+                new Set(
+                    d.map((row: { name: string | null }) => (row.name ?? '').trim()).filter(Boolean)
+                )
+            );
+            setDepartmentOptions(names);
+        } else {
+            setDepartmentOptions([]);
+        }
         setLoading(false);
     }, []);
 
@@ -172,6 +225,118 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
         setCreatedCredentials(null);
     };
 
+    const getAccessToken = useCallback(async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) {
+            throw new Error('Session expired. Please sign in again.');
+        }
+        return accessToken;
+    }, []);
+
+    const saveStudentEdit = useCallback(async () => {
+        if (!studentEditForm) return;
+        setLoadError(null);
+        setActionLoading(true);
+        try {
+            const accessToken = await getAccessToken();
+            const res = await fetch('/api/manage-user', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    role: 'student',
+                    id: studentEditForm.id,
+                    updates: {
+                        name: studentEditForm.name.trim(),
+                        roll_number: studentEditForm.roll_number.trim(),
+                        program: studentEditForm.program.trim(),
+                        department: studentEditForm.department.trim(),
+                        semester: Number(studentEditForm.semester),
+                        batch_year: studentEditForm.batch_year.trim(),
+                        phone: studentEditForm.phone.trim(),
+                    },
+                }),
+            });
+            const data = await parseApiPayload(res);
+            if (!res.ok) throw new Error(data.error || 'Failed to update student.');
+            setStudentEditForm(null);
+            await fetchUsers();
+        } catch (err: any) {
+            setLoadError(err.message || 'Failed to update student.');
+        } finally {
+            setActionLoading(false);
+        }
+    }, [studentEditForm, fetchUsers, getAccessToken, parseApiPayload]);
+
+    const saveFacultyEdit = useCallback(async () => {
+        if (!facultyEditForm) return;
+        setLoadError(null);
+        setActionLoading(true);
+        try {
+            const accessToken = await getAccessToken();
+            const res = await fetch('/api/manage-user', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    role: 'faculty',
+                    id: facultyEditForm.id,
+                    updates: {
+                        name: facultyEditForm.name.trim(),
+                        employee_id: facultyEditForm.employee_id.trim(),
+                        department: facultyEditForm.department.trim(),
+                        designation: facultyEditForm.designation.trim(),
+                        qualification: facultyEditForm.qualification.trim(),
+                        phone: facultyEditForm.phone.trim(),
+                    },
+                }),
+            });
+            const data = await parseApiPayload(res);
+            if (!res.ok) throw new Error(data.error || 'Failed to update faculty.');
+            setFacultyEditForm(null);
+            await fetchUsers();
+        } catch (err: any) {
+            setLoadError(err.message || 'Failed to update faculty.');
+        } finally {
+            setActionLoading(false);
+        }
+    }, [facultyEditForm, fetchUsers, getAccessToken, parseApiPayload]);
+
+    const deleteUser = useCallback(async () => {
+        if (!deleteTarget) return;
+        setLoadError(null);
+        setActionLoading(true);
+        try {
+            const accessToken = await getAccessToken();
+            const res = await fetch('/api/manage-user', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    role: deleteTarget.role,
+                    id: deleteTarget.id,
+                }),
+            });
+            const data = await parseApiPayload(res);
+            if (!res.ok) throw new Error(data.error || 'Failed to delete user.');
+            setDeleteTarget(null);
+            setStudentEditForm(null);
+            setFacultyEditForm(null);
+            await fetchUsers();
+        } catch (err: any) {
+            setLoadError(err.message || 'Failed to delete user.');
+        } finally {
+            setActionLoading(false);
+        }
+    }, [deleteTarget, fetchUsers, getAccessToken, parseApiPayload]);
+
     // Submit
     const handleSubmit = async () => {
         if (!generatedEmail || !generatedPassword) return;
@@ -197,7 +362,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                     profile: isStudent ? studentForm : facultyForm,
                 }),
             });
-            const data = await res.json();
+            const data = await parseApiPayload(res);
             if (!res.ok) throw new Error(data.error || 'Failed to create user');
             setCreatedCredentials({ email: generatedEmail, password: generatedPassword });
             setSubmitResult({ success: true, message: `${isStudent ? 'Student' : 'Faculty'} account created successfully!` });
@@ -296,6 +461,11 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                         </button>
                     ))}
                 </div>
+                {departmentOptions.length === 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        No departments configured yet. Add departments in Courses / Departments before onboarding users.
+                    </div>
+                )}
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input value={search} onChange={e => setSearch(e.target.value)}
@@ -329,7 +499,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead><tr className="border-b border-border bg-muted/30">
-                                        {['Student', 'Roll No.', 'Program', 'Department', 'Sem', 'Email'].map(h => (
+                                        {['Student', 'Roll No.', 'Program', 'Department', 'Sem', 'Email', 'Actions'].map(h => (
                                             <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                                         ))}
                                     </tr></thead>
@@ -354,6 +524,33 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                                     <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{s.semester}</span>
                                                 </td>
                                                 <td className="px-4 py-3 text-sm text-muted-foreground truncate max-w-[160px]">{s.email}</td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => setStudentEditForm({
+                                                                id: s.id,
+                                                                name: s.name ?? '',
+                                                                roll_number: s.roll_number ?? '',
+                                                                program: s.program ?? '',
+                                                                department: s.department ?? '',
+                                                                semester: Number(s.semester) || 1,
+                                                                batch_year: s.batch_year ?? '',
+                                                                phone: s.phone ?? '',
+                                                            })}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted"
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setDeleteTarget({ id: s.id, role: 'student', name: s.name })}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </motion.tr>
                                         ))}
                                     </tbody>
@@ -367,7 +564,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead><tr className="border-b border-border bg-muted/30">
-                                        {['Faculty', 'Emp. ID', 'Department', 'Designation', 'Qualification', 'Email'].map(h => (
+                                        {['Faculty', 'Emp. ID', 'Department', 'Designation', 'Qualification', 'Email', 'Actions'].map(h => (
                                             <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                                         ))}
                                     </tr></thead>
@@ -389,6 +586,32 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                                 </td>
                                                 <td className="px-4 py-3 text-sm text-muted-foreground">{f.qualification}</td>
                                                 <td className="px-4 py-3 text-sm text-muted-foreground truncate max-w-[160px]">{f.email}</td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => setFacultyEditForm({
+                                                                id: f.id,
+                                                                name: f.name ?? '',
+                                                                employee_id: f.employee_id ?? '',
+                                                                department: f.department ?? '',
+                                                                designation: f.designation ?? '',
+                                                                qualification: f.qualification ?? '',
+                                                                phone: f.phone ?? '',
+                                                            })}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted"
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setDeleteTarget({ id: f.id, role: 'faculty', name: f.name })}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </motion.tr>
                                         ))}
                                     </tbody>
@@ -398,6 +621,189 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                     )}
                 </motion.div>
             )}
+
+            {/* Edit Student Modal */}
+            <AnimatePresence>
+                {studentEditForm && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setStudentEditForm(null)}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                        />
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+                            >
+                                <div className="p-5 border-b border-border flex items-center justify-between">
+                                    <h3 className="font-semibold">Edit Student</h3>
+                                    <button onClick={() => setStudentEditForm(null)} className="p-2 rounded-xl hover:bg-muted">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div className="p-5 space-y-3">
+                                    <Field label="Name *" value={studentEditForm.name} onChange={v => setStudentEditForm({ ...studentEditForm, name: v })} />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Field label="Roll Number *" value={studentEditForm.roll_number} onChange={v => setStudentEditForm({ ...studentEditForm, roll_number: v })} />
+                                        <Field label="Program *" value={studentEditForm.program} onChange={v => setStudentEditForm({ ...studentEditForm, program: v })} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <SelectField
+                                            label="Department *"
+                                            value={studentEditForm.department}
+                                            onChange={v => setStudentEditForm({ ...studentEditForm, department: v })}
+                                            options={['', ...departmentOptions]}
+                                        />
+                                        <SelectField
+                                            label="Semester *"
+                                            value={String(studentEditForm.semester)}
+                                            onChange={v => setStudentEditForm({ ...studentEditForm, semester: Number(v) })}
+                                            options={['1', '2', '3', '4', '5', '6', '7', '8']}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Field label="Batch Year *" value={studentEditForm.batch_year} onChange={v => setStudentEditForm({ ...studentEditForm, batch_year: v })} />
+                                        <Field label="Phone" value={studentEditForm.phone} onChange={v => setStudentEditForm({ ...studentEditForm, phone: v })} />
+                                    </div>
+                                </div>
+                                <div className="p-5 border-t border-border flex gap-3">
+                                    <button
+                                        onClick={() => setStudentEditForm(null)}
+                                        className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={saveStudentEdit}
+                                        disabled={actionLoading}
+                                        className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
+                                    >
+                                        {actionLoading ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Faculty Modal */}
+            <AnimatePresence>
+                {facultyEditForm && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setFacultyEditForm(null)}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                        />
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+                            >
+                                <div className="p-5 border-b border-border flex items-center justify-between">
+                                    <h3 className="font-semibold">Edit Faculty</h3>
+                                    <button onClick={() => setFacultyEditForm(null)} className="p-2 rounded-xl hover:bg-muted">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div className="p-5 space-y-3">
+                                    <Field label="Name *" value={facultyEditForm.name} onChange={v => setFacultyEditForm({ ...facultyEditForm, name: v })} />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Field label="Employee ID *" value={facultyEditForm.employee_id} onChange={v => setFacultyEditForm({ ...facultyEditForm, employee_id: v })} />
+                                        <Field label="Phone" value={facultyEditForm.phone} onChange={v => setFacultyEditForm({ ...facultyEditForm, phone: v })} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <SelectField
+                                            label="Department *"
+                                            value={facultyEditForm.department}
+                                            onChange={v => setFacultyEditForm({ ...facultyEditForm, department: v })}
+                                            options={['', ...departmentOptions]}
+                                        />
+                                        <SelectField
+                                            label="Designation *"
+                                            value={facultyEditForm.designation}
+                                            onChange={v => setFacultyEditForm({ ...facultyEditForm, designation: v })}
+                                            options={['Lecturer', 'Assistant Professor', 'Associate Professor', 'Professor']}
+                                        />
+                                    </div>
+                                    <Field label="Qualification" value={facultyEditForm.qualification} onChange={v => setFacultyEditForm({ ...facultyEditForm, qualification: v })} />
+                                </div>
+                                <div className="p-5 border-t border-border flex gap-3">
+                                    <button
+                                        onClick={() => setFacultyEditForm(null)}
+                                        className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={saveFacultyEdit}
+                                        disabled={actionLoading}
+                                        className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
+                                    >
+                                        {actionLoading ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Confirmation Modal */}
+            <AnimatePresence>
+                {deleteTarget && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setDeleteTarget(null)}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                        />
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6"
+                            >
+                                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                                    <Trash2 className="w-6 h-6 text-red-600" />
+                                </div>
+                                <h3 className="font-semibold text-lg">Delete {deleteTarget.role === 'student' ? 'Student' : 'Faculty'}?</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    This will permanently remove <span className="font-medium text-foreground">{deleteTarget.name}</span> and all related data.
+                                </p>
+                                <div className="mt-5 flex gap-3">
+                                    <button
+                                        onClick={() => setDeleteTarget(null)}
+                                        className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={deleteUser}
+                                        disabled={actionLoading}
+                                        className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-60"
+                                    >
+                                        {actionLoading ? 'Deleting...' : 'Delete'}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Add User Modal */}
             <AnimatePresence>
@@ -465,6 +871,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                             <StudentFormSections
                                                 key={`student-${currentSection}`}
                                                 section={currentSection}
+                                                departments={departmentOptions}
                                                 form={studentForm}
                                                 onChange={setStudentForm}
                                                 generatedEmail={generatedEmail}
@@ -478,6 +885,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                             <FacultyFormSections
                                                 key={`faculty-${currentSection}`}
                                                 section={currentSection}
+                                                departments={departmentOptions}
                                                 form={facultyForm}
                                                 onChange={setFacultyForm}
                                                 generatedEmail={generatedEmail}
@@ -599,10 +1007,11 @@ function EmptyState({ type, onAdd }: { type: string; onAdd: () => void }) {
 // Student Form Sections
 
 function StudentFormSections({
-    section, form, onChange, generatedEmail, setGeneratedEmail,
+    section, departments, form, onChange, generatedEmail, setGeneratedEmail,
     generatedPassword, setGeneratedPassword, showPassword, setShowPassword,
 }: {
     section: FormSection;
+    departments: string[];
     form: StudentAdmissionForm;
     onChange: (f: StudentAdmissionForm) => void;
     generatedEmail: string; setGeneratedEmail: (v: string) => void;
@@ -641,8 +1050,12 @@ function StudentFormSections({
                     <SelectField label="Program *" value={form.program} onChange={v => set('program', v)}
                         options={['', 'B.Tech', 'M.Tech', 'MBA', 'BCA', 'MCA', 'B.Sc', 'M.Sc', 'Ph.D']} />
                     <SelectField label="Department / Branch *" value={form.department} onChange={v => set('department', v)}
-                        options={['', 'Computer Science & Engineering', 'Electronics & Communication', 'Electrical Engineering',
-                            'Mechanical Engineering', 'Civil Engineering', 'Information Technology', 'Data Science', 'Artificial Intelligence']} />
+                        options={['', ...departments]} />
+                    {departments.length === 0 && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            Departments are empty. Add departments first from Courses / Departments.
+                        </p>
+                    )}
                     <div className="grid grid-cols-2 gap-3">
                         <Field label="Batch Year *" value={form.batchYear} onChange={v => set('batchYear', v)} placeholder="e.g. 2024" type="number" />
                         <Field label="Institution" value={form.institution} onChange={v => set('institution', v)} placeholder="University name" />
@@ -675,10 +1088,11 @@ function StudentFormSections({
 // Faculty Form Sections
 
 function FacultyFormSections({
-    section, form, onChange, generatedEmail, setGeneratedEmail,
+    section, departments, form, onChange, generatedEmail, setGeneratedEmail,
     generatedPassword, setGeneratedPassword, showPassword, setShowPassword,
 }: {
     section: FormSection;
+    departments: string[];
     form: FacultyAdmissionForm;
     onChange: (f: FacultyAdmissionForm) => void;
     generatedEmail: string; setGeneratedEmail: (v: string) => void;
@@ -710,8 +1124,12 @@ function FacultyFormSections({
                             options={['Lecturer', 'Assistant Professor', 'Associate Professor', 'Professor']} />
                     </div>
                     <SelectField label="Department *" value={form.department} onChange={v => set('department', v)}
-                        options={['', 'Computer Science & Engineering', 'Electronics & Communication', 'Electrical Engineering',
-                            'Mechanical Engineering', 'Civil Engineering', 'Information Technology', 'Data Science', 'Artificial Intelligence']} />
+                        options={['', ...departments]} />
+                    {departments.length === 0 && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            Departments are empty. Add departments first from Courses / Departments.
+                        </p>
+                    )}
                     <div className="grid grid-cols-2 gap-3">
                         <Field label="Qualification *" value={form.qualification} onChange={v => set('qualification', v)} placeholder="e.g. Ph.D, M.Tech" />
                         <DateField label="Date of Joining *" value={form.dateOfJoining} onChange={v => set('dateOfJoining', v)} />
