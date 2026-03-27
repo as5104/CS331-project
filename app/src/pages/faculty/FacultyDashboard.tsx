@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useFacultyCourses } from '@/hooks/useCourses';
 import {
     ClipboardCheck, BookOpen, Calendar, Bell,
     Users, ChevronRight, FileText, CheckCircle2,
@@ -14,6 +15,8 @@ interface FacultyDashboardProps {
 
 export function FacultyDashboard({ onNavigate }: FacultyDashboardProps) {
     const { user } = useAuth();
+    const { courses } = useFacultyCourses(user?.id);
+
 
     const quickActions = [
         { label: 'Review Assignments', icon: ClipboardCheck, color: 'purple', path: '/review' },
@@ -33,7 +36,7 @@ export function FacultyDashboard({ onNavigate }: FacultyDashboardProps) {
             {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <StatCard title="Pending Reviews" value={mockPendingReviews.length} icon={ClipboardCheck} trend="down" trendValue="Need attention" color="amber" delay={0} />
-                <StatCard title="My Courses" value={(user as any)?.courses?.length || 2} icon={BookOpen} trend="neutral" trendValue="This semester" color="blue" delay={0.1} />
+                <StatCard title="My Courses" value={courses.length} icon={BookOpen} trend="neutral" trendValue="This semester" color="blue" delay={0.1} />
                 <StatCard title="Students" value={85} icon={Users} trend="neutral" trendValue="Total enrolled" color="purple" delay={0.2} />
                 <StatCard title="Tasks Due" value={mockFacultyTasks.filter(t => !t.completed).length} icon={CheckCircle2} trend="down" trendValue="Pending" color="green" delay={0.3} />
             </div>

@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { supabase } from '@/lib/supabaseClient';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import { format } from 'date-fns';
 import type { StudentAdmissionForm, FacultyAdmissionForm, StudentRow, FacultyRow } from '@/types';
 import {
     Users, GraduationCap, UserPlus, Search, X,
     Copy, Check, Eye, EyeOff, Loader2, CheckCircle2,
-    AlertCircle, ChevronDown, User, Phone, BookOpen,
+    AlertCircle, User, Phone, BookOpen,
     UserCircle, RefreshCw, RotateCcw,
 } from 'lucide-react';
 
@@ -99,6 +102,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
     const [students, setStudents] = useState<StudentRow[]>([]);
     const [faculty, setFaculty] = useState<FacultyRow[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     // Form state
     const [studentForm, setStudentForm] = useState<StudentAdmissionForm>(emptyStudentForm);
@@ -114,10 +118,22 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
     // Fetch users from Supabase
     const fetchUsers = useCallback(async () => {
         setLoading(true);
-        const [{ data: s }, { data: f }] = await Promise.all([
+        setLoadError(null);
+
+        const [{ data: s, error: studentsError }, { data: f, error: facultyError }] = await Promise.all([
             supabase.from('students').select('*').order('name'),
             supabase.from('faculty').select('*').order('name'),
         ]);
+
+        if (studentsError || facultyError) {
+            const parts = [
+                studentsError ? `Students: ${studentsError.message}` : null,
+                facultyError ? `Faculty: ${facultyError.message}` : null,
+            ].filter(Boolean);
+            setLoadError(parts.join(' | ') || 'Failed to fetch users.');
+            console.error('UserManagement fetchUsers error', { studentsError, facultyError });
+        }
+
         setStudents((s as StudentRow[]) || []);
         setFaculty((f as FacultyRow[]) || []);
         setLoading(false);
@@ -287,6 +303,16 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
             </motion.div>
+
+            {loadError && (
+                <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                    {loadError}
+                </motion.div>
+            )}
 
             {/* User Table */}
             {loading ? (
@@ -593,7 +619,7 @@ function StudentFormSections({
                     <SectionHeader icon={User} title="Personal Information" />
                     <Field label="Full Name *" value={form.name} onChange={v => set('name', v)} placeholder="e.g. Ananya Sharma" />
                     <div className="grid grid-cols-2 gap-3">
-                        <Field label="Date of Birth *" value={form.dateOfBirth} onChange={v => set('dateOfBirth', v)} type="date" />
+                        <DateField label="Date of Birth *" value={form.dateOfBirth} onChange={v => set('dateOfBirth', v)} />
                         <SelectField label="Gender *" value={form.gender} onChange={v => set('gender', v as any)}
                             options={['Male', 'Female', 'Other']} />
                     </div>
@@ -669,7 +695,7 @@ function FacultyFormSections({
                     <SectionHeader icon={User} title="Personal Information" />
                     <Field label="Full Name *" value={form.name} onChange={v => set('name', v)} placeholder="e.g. Dr. Rajesh Kumar" />
                     <div className="grid grid-cols-2 gap-3">
-                        <Field label="Date of Birth *" value={form.dateOfBirth} onChange={v => set('dateOfBirth', v)} type="date" />
+                        <DateField label="Date of Birth *" value={form.dateOfBirth} onChange={v => set('dateOfBirth', v)} />
                         <SelectField label="Gender *" value={form.gender} onChange={v => set('gender', v as any)} options={['Male', 'Female', 'Other']} />
                     </div>
                     <Field label="Phone Number *" value={form.phone} onChange={v => set('phone', v)} placeholder="+91 9XXXXXXXXX" type="tel" />
@@ -688,7 +714,7 @@ function FacultyFormSections({
                             'Mechanical Engineering', 'Civil Engineering', 'Information Technology', 'Data Science', 'Artificial Intelligence']} />
                     <div className="grid grid-cols-2 gap-3">
                         <Field label="Qualification *" value={form.qualification} onChange={v => set('qualification', v)} placeholder="e.g. Ph.D, M.Tech" />
-                        <Field label="Date of Joining *" value={form.dateOfJoining} onChange={v => set('dateOfJoining', v)} type="date" />
+                        <DateField label="Date of Joining *" value={form.dateOfJoining} onChange={v => set('dateOfJoining', v)} />
                     </div>
                     <Field label="Institution" value={form.institution} onChange={v => set('institution', v)} placeholder="University name" />
                 </>
@@ -780,19 +806,29 @@ function Field({ label, value, onChange, placeholder = '', type = 'text' }: {
     );
 }
 
+function DateField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+    const dateValue = value ? new Date(value) : undefined;
+    const handleChange = (d: Date | undefined) => {
+        onChange(d ? format(d, 'yyyy-MM-dd') : '');
+    };
+    return (
+        <CustomDatePicker
+            label={label}
+            value={dateValue}
+            onChange={handleChange}
+        />
+    );
+}
+
 function SelectField({ label, value, onChange, options }: {
     label: string; value: string; onChange: (v: string) => void; options: string[];
 }) {
     return (
-        <div>
-            <label className="block text-sm font-medium mb-1.5">{label}</label>
-            <div className="relative">
-                <select value={value} onChange={e => onChange(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/50 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    {options.map(opt => <option key={opt} value={opt}>{opt || '— Select —'}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            </div>
-        </div>
+        <CustomSelect
+            label={label}
+            value={value}
+            onChange={onChange}
+            options={options.map(opt => ({ value: opt, label: opt || '— Select —' }))}
+        />
     );
 }

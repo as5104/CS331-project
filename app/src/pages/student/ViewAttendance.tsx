@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { useStudentCourses } from '@/hooks/useCourses';
 import {
   Calendar,
   CheckCircle2,
@@ -47,7 +48,7 @@ const generateAttendanceData = (year: number, month: number) => {
 export function ViewAttendance({ onNavigate }: ViewAttendanceProps) {
   const { user } = useAuth();
   const student = user as any;
-  const studentCourses = Array.isArray(student?.courses) ? student.courses : [];
+  const { courses: studentCourses } = useStudentCourses(student?.id);
   const courseAttendance = studentCourses.map((course: any) => ({
     ...course,
     present: Math.floor(Math.random() * 10) + 35,

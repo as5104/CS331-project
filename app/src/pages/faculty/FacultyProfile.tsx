@@ -1,6 +1,7 @@
-﻿import { motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useFacultyCourses } from '@/hooks/useCourses';
 import type { Faculty } from '@/types';
 import {
     User, Mail, Phone, Calendar, BookOpen,
@@ -40,7 +41,7 @@ function InfoRow({ icon: Icon, label, value }: {
 export function FacultyProfile({ onNavigate }: FacultyProfileProps) {
     const { user } = useAuth();
     const faculty = user as Faculty;
-    const courses = Array.isArray(faculty?.courses) ? faculty.courses : [];
+    const { courses } = useFacultyCourses(faculty?.id);
 
     return (
         <DashboardLayout title="My Profile" activePath="/profile" onNavigate={onNavigate}>

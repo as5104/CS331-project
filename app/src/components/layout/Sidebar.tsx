@@ -55,6 +55,7 @@ const navItems: Record<UserRole, NavItem[]> = {
   admin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { label: 'User Management', icon: Users, path: '/users' },
+    { label: 'Courses', icon: BookOpen, path: '/course-management' },
     { label: 'Workflows', icon: Workflow, path: '/workflows' },
     { label: 'System Monitor', icon: BarChart3, path: '/monitor' },
     { label: 'Announcements', icon: Megaphone, path: '/announcements' },
