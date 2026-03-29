@@ -2,7 +2,11 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import type { Faculty, Course } from '@/types';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import { format } from 'date-fns';
+import { useFacultyCourses } from '@/hooks/useCourses';
+import type { Faculty } from '@/types';
 import {
     Calendar, CheckCircle2, Users, Save, RotateCcw,
     UserCheck, UserX, Timer,
@@ -41,7 +45,7 @@ function getMockStudents(courseCode: string): StudentAttendance[] {
 export function FacultyAttendance({ onNavigate }: FacultyAttendanceProps) {
     const { user } = useAuth();
     const faculty = user as Faculty;
-    const courses: Course[] = Array.isArray(faculty?.courses) ? faculty.courses : [];
+    const { courses } = useFacultyCourses(faculty?.id);
 
     const [selectedCourseIdx, setSelectedCourseIdx] = useState(0);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
@@ -126,23 +130,22 @@ export function FacultyAttendance({ onNavigate }: FacultyAttendanceProps) {
                     {/* Course + Date Selector */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                         className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label className="block text-sm font-medium mb-1.5">Select Course</label>
-                            <select
-                                value={selectedCourseIdx}
-                                onChange={e => { setSelectedCourseIdx(Number(e.target.value)); setSaved(false); }}
-                                className="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                                {courses.map((c, i) => (
-                                    <option key={c.code} value={i}>{c.code} — {c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1.5">Date</label>
-                            <input type="date" value={selectedDate}
-                                onChange={e => { setSelectedDate(e.target.value); setSaved(false); }}
-                                className="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                        </div>
+                        <CustomSelect
+                            label="Select Course"
+                            value={String(selectedCourseIdx)}
+                            onChange={v => { setSelectedCourseIdx(Number(v)); setSaved(false); }}
+                            options={courses.map((c: any, i: number) => ({ value: String(i), label: `${c.code} — ${c.name}` }))}
+                        />
+                        <CustomDatePicker
+                            label="Date"
+                            value={selectedDate ? new Date(selectedDate) : undefined}
+                            onChange={(d) => {
+                                if (d) {
+                                    setSelectedDate(format(d, 'yyyy-MM-dd'));
+                                    setSaved(false);
+                                }
+                            }}
+                        />
                     </motion.div>
 
                     {/* Summary Cards */}

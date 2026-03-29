@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { useStudentCourses } from '@/hooks/useCourses';
 import type { Student } from '@/types';
 import {
   User, Mail, Phone, Calendar, BookOpen,
@@ -42,7 +43,7 @@ function InfoRow({ icon: Icon, label, value }: {
 export function StudentProfile({ onNavigate }: StudentProfileProps) {
   const { user } = useAuth();
   const student = user as Student;
-  const studentCourses = Array.isArray(student?.courses) ? student.courses : [];
+  const { courses: studentCourses } = useStudentCourses(student?.id);
   const [activeTab, setActiveTab] = useState<'personal' | 'academic'>('personal');
 
   // Build semester history based on actual current semester

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import { format } from 'date-fns';
 import { mockLeaveRequests } from '@/data/mockData';
 import {
   Clock,
@@ -207,28 +209,18 @@ export function LeaveRequest({ onNavigate }: LeaveRequestProps) {
             <div className="bg-card rounded-xl border border-border p-5">
               <label className="block text-sm font-medium mb-3">Select Dates *</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">From Date</label>
-                  <input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-muted/50 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">To Date</label>
-                  <input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    min={fromDate || new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-muted/50 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  />
-                </div>
+                <CustomDatePicker
+                  label="From Date"
+                  value={fromDate ? new Date(fromDate) : undefined}
+                  onChange={(d) => setFromDate(d ? format(d, 'yyyy-MM-dd') : '')}
+                  minDate={new Date()}
+                />
+                <CustomDatePicker
+                  label="To Date"
+                  value={toDate ? new Date(toDate) : undefined}
+                  onChange={(d) => setToDate(d ? format(d, 'yyyy-MM-dd') : '')}
+                  minDate={fromDate ? new Date(fromDate) : new Date()}
+                />
               </div>
 
               {/* Duration & Validation */}

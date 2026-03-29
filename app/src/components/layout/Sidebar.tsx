@@ -10,6 +10,7 @@ import {
   Bell,
   GraduationCap,
   ClipboardCheck,
+  Building2,
   Users,
   Settings,
   BarChart3,
@@ -55,6 +56,17 @@ const navItems: Record<UserRole, NavItem[]> = {
   admin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { label: 'User Management', icon: Users, path: '/users' },
+    {
+      label: 'Courses',
+      icon: BookOpen,
+      path: '/course-management',
+      children: [
+        { label: 'Semesters', icon: Calendar, path: '/course-management/terms' },
+        { label: 'Departments', icon: Building2, path: '/course-management/departments' },
+        { label: 'Courses Catalog', icon: BookOpen, path: '/course-management/courses' },
+        { label: 'Enrollment', icon: ClipboardCheck, path: '/course-management/enrollments' },
+      ],
+    },
     { label: 'Workflows', icon: Workflow, path: '/workflows' },
     { label: 'System Monitor', icon: BarChart3, path: '/monitor' },
     { label: 'Announcements', icon: Megaphone, path: '/announcements' },
@@ -108,7 +120,8 @@ export function Sidebar({ activePath, onNavigate, isMobileOpen, onMobileClose }:
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-1">
         {items.map((item, index) => {
-          const isActive = activePath === item.path || item.children?.some(child => child.path === activePath);
+          const isPathActive = (path: string) => activePath === path || activePath.startsWith(`${path}/`);
+          const isActive = isPathActive(item.path) || item.children?.some(child => isPathActive(child.path));
           const Icon = item.icon;
           
           return (
@@ -142,7 +155,7 @@ export function Sidebar({ activePath, onNavigate, isMobileOpen, onMobileClose }:
               {!isCollapsed && item.children && item.children.length > 0 && (
                 <div className="ml-6 mt-1 space-y-1">
                   {item.children.map((child) => {
-                    const childActive = activePath === child.path;
+                    const childActive = isPathActive(child.path);
                     return (
                       <button
                         key={child.path}

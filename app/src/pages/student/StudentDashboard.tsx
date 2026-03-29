@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { StatCard } from '@/components/shared/StatCard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { mockAssignments, mockNotifications } from '@/data/mockData';
+import { supabase } from '@/lib/supabaseClient';
 import {
   GraduationCap,
   Calendar,
@@ -16,6 +18,7 @@ import {
   TrendingUp,
   CheckCircle2,
   User,
+  Loader2,
 } from 'lucide-react';
 
 interface StudentDashboardProps {
@@ -25,8 +28,56 @@ interface StudentDashboardProps {
 export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
   const { user } = useAuth();
   const student = user as any;
-  const studentCourses = Array.isArray(student?.courses) ? student.courses : [];
   const [activeTab, setActiveTab] = useState('all');
+
+  const [studentCourses, setStudentCourses] = useState<any[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+
+  const fetchCourses = useCallback(async () => {
+    if (!student?.id) return;
+    setLoadingCourses(true);
+
+    // First get the student profile ID
+    const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('auth_user_id', student.id)
+        .maybeSingle();
+
+    if (!studentRow) { setLoadingCourses(false); return; }
+
+    // Fetch live enrollments
+    const { data: enrollments } = await supabase
+        .from('course_enrollments')
+        .select(`
+            grade,
+            attendance_pct,
+            courses (
+                id, code, name, credits, semester,
+                instructor:faculty!courses_instructor_id_fkey(name)
+            )
+        `)
+        .eq('student_id', studentRow.id);
+
+    if (enrollments) {
+        setStudentCourses(enrollments.map((e: any) => ({
+            id: e.courses.id,
+            code: e.courses.code,
+            name: e.courses.name,
+            credits: e.courses.credits,
+            semester: e.courses.semester,
+            instructor: e.courses.instructor?.name || 'Unassigned',
+            grade: e.grade,
+            attendance: e.attendance_pct || 0,
+            progress: e.grade ? 100 : Math.floor(Math.random() * 40) + 20 // Mock progress for UI
+        })));
+    }
+    setLoadingCourses(false);
+  }, [student?.id]);
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   const pendingAssignments = mockAssignments.filter(a => a.status === 'pending');
   const unreadNotifications = mockNotifications.filter(n => !n.read);
@@ -127,52 +178,58 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
               </div>
             </div>
             <div className="p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {studentCourses.slice(0, 4).map((course: any, index: number) => (
-                  <motion.div
-                    key={course.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 + index * 0.1 }}
-                    whileHover={{ y: -2 }}
-                    className="p-4 rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground">{course.code}</span>
-                        <h4 className="font-medium text-sm mt-0.5">{course.name}</h4>
+              {loadingCourses ? (
+                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+              ) : studentCourses.length === 0 ? (
+                 <p className="text-sm text-muted-foreground text-center py-6 bg-muted/30 rounded-xl border border-dashed border-border">You are not enrolled in any courses yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {studentCourses.slice(0, 4).map((course: any, index: number) => (
+                    <motion.div
+                      key={course.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4 + index * 0.1 }}
+                      whileHover={{ y: -2 }}
+                      className="p-4 rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground">{course.code}</span>
+                          <h4 className="font-medium text-sm mt-0.5">{course.name}</h4>
+                        </div>
+                        <span className={`
+                          px-2 py-0.5 rounded-full text-xs font-medium
+                          ${course.grade ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}
+                        `}>
+                          {course.grade || 'In Progress'}
+                        </span>
                       </div>
-                      <span className={`
-                        px-2 py-0.5 rounded-full text-xs font-medium
-                        ${course.grade ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}
-                      `}>
-                        {course.grade || 'In Progress'}
-                      </span>
-                    </div>
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">{course.progress}%</span>
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-medium">{course.progress}%</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${course.progress}%` }}
+                            transition={{ duration: 0.8, delay: 0.5 + index * 0.1 }}
+                            className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
+                          />
+                        </div>
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${course.progress}%` }}
-                          transition={{ duration: 0.8, delay: 0.5 + index * 0.1 }}
-                          className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
-                        />
+                      <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Att: {course.attendance}%
+                        </span>
+                        <span>{course.credits} Credits</span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Att: {course.attendance}%
-                      </span>
-                      <span>{course.credits} Credits</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -189,17 +246,17 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 <h3 className="font-semibold">Recent Assignments</h3>
               </div>
               <div className="flex items-center gap-2">
-                <select 
+                <CustomSelect
                   value={activeTab}
-                  onChange={(e) => setActiveTab(e.target.value)}
-                  className="text-sm border border-border rounded-lg px-3 py-1.5 bg-muted/50"
-                >
-                  <option value="all">All</option>
-                  <option value="pending">Pending</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="graded">Graded</option>
-                </select>
-                <button 
+                  onChange={setActiveTab}
+                  options={[
+                    { value: 'all', label: 'All' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'submitted', label: 'Submitted' },
+                    { value: 'graded', label: 'Graded' },
+                  ]}
+                />
+                <button
                   onClick={() => onNavigate('/assignments')}
                   className="text-sm text-primary hover:underline flex items-center gap-1"
                 >
@@ -353,7 +410,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 </motion.div>
               ))}
             </div>
-            <button 
+            <button
               onClick={() => onNavigate('/notifications')}
               className="w-full p-3 text-sm text-primary hover:bg-muted/50 transition-colors border-t border-border"
             >

@@ -13,7 +13,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ─── Row mappers ──────────────────────────────────────────────────────────────
+// Row mappers
 
 function mapStudentRow(row: any): Student {
   return {
@@ -82,11 +82,11 @@ function mapAdminRow(row: any): Admin {
   };
 }
 
-// ─── Auth Provider ────────────────────────────────────────────────────────────
+// Auth Provider
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Resolve a Supabase auth session to a full user object by querying role tables
   const resolveAuthUser = useCallback(async (authEmail: string, expectedRole?: UserRole): Promise<User | null> => {
@@ -199,6 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     supabase.auth.signOut().catch(() => { });
     setUser(null);
+    sessionStorage.removeItem('currentPage');
   }, []);
 
   const updateUser = useCallback((updates: Partial<User>) => {
@@ -208,12 +209,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Restore session on page refresh
   useEffect(() => {
     const restoreSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      const authEmail = data.session?.user?.email;
-      if (!authEmail) return;
+      try {
+        const { data } = await supabase.auth.getSession();
+        const authEmail = data.session?.user?.email;
+        if (!authEmail) return;
 
-      const resolved = await resolveAuthUser(authEmail);
-      if (resolved) setUser(resolved);
+        const resolved = await resolveAuthUser(authEmail);
+        if (resolved) setUser(resolved);
+      } finally {
+        setIsLoading(false);
+      }
     };
     restoreSession();
   }, [resolveAuthUser]);

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { mockAnnouncements } from '@/data/mockData';
 import type { Announcement } from '@/types';
 import {
     Megaphone, Plus, X, Send, Users, GraduationCap,
-    UserCircle, Globe, ChevronDown,
+    UserCircle, Globe,
 } from 'lucide-react';
 
 interface AdminAnnouncementsProps {
@@ -164,37 +165,27 @@ export function AdminAnnouncements({ onNavigate }: AdminAnnouncementsProps) {
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1.5">Target Audience</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={form.target}
-                                                    onChange={e => setForm(f => ({ ...f, target: e.target.value as Announcement['target'] }))}
-                                                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/50 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                                >
-                                                    <option value="all">All Users</option>
-                                                    <option value="students">Students</option>
-                                                    <option value="faculty">Faculty</option>
-                                                    <option value="department">Department</option>
-                                                </select>
-                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1.5">Priority</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={form.priority}
-                                                    onChange={e => setForm(f => ({ ...f, priority: e.target.value as Announcement['priority'] }))}
-                                                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/50 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                                >
-                                                    <option value="low">Low</option>
-                                                    <option value="medium">Medium</option>
-                                                    <option value="high">High</option>
-                                                </select>
-                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                            </div>
-                                        </div>
+                                        <CustomSelect
+                                            label="Target Audience"
+                                            value={form.target}
+                                            onChange={v => setForm(f => ({ ...f, target: v as any }))}
+                                            options={[
+                                                { value: 'all', label: 'All Users' },
+                                                { value: 'students', label: 'Students' },
+                                                { value: 'faculty', label: 'Faculty' },
+                                                { value: 'department', label: 'Department' },
+                                            ]}
+                                        />
+                                        <CustomSelect
+                                            label="Priority"
+                                            value={form.priority}
+                                            onChange={v => setForm(f => ({ ...f, priority: v as any }))}
+                                            options={[
+                                                { value: 'low', label: 'Low' },
+                                                { value: 'medium', label: 'Medium' },
+                                                { value: 'high', label: 'High' },
+                                            ]}
+                                        />
                                     </div>
                                 </div>
                                 <div className="flex gap-3 p-5 border-t border-border">
