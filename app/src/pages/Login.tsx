@@ -52,12 +52,13 @@ const roleConfig = {
 };
 
 export function Login({ onLogin }: LoginProps) {
-  const { login, isLoading } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('student');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<'role' | 'credentials'>('role');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
@@ -65,6 +66,7 @@ export function Login({ onLogin }: LoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
 
     try {
       await login(email, password, selectedRole);
@@ -72,6 +74,8 @@ export function Login({ onLogin }: LoginProps) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -82,6 +86,9 @@ export function Login({ onLogin }: LoginProps) {
 
   const handleBack = () => {
     setStep('role');
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
     setError('');
   };
 
@@ -472,7 +479,7 @@ export function Login({ onLogin }: LoginProps) {
 
                       <motion.button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
                         className={`
@@ -484,7 +491,7 @@ export function Login({ onLogin }: LoginProps) {
                           transition-all duration-200
                         `}
                       >
-                        {isLoading ? (
+                        {isSubmitting ? (
                           <motion.div
                             animate={{ rotate: 360 }}
                             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}

@@ -13,6 +13,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function normalizeAuthErrorMessage(error: { message?: string } | null): string {
+  const raw = (error?.message ?? '').toLowerCase();
+
+  if (raw.includes('invalid login credentials')) {
+    return 'Incorrect email or password. Please try again.';
+  }
+  if (raw.includes('email not confirmed')) {
+    return 'Please verify your email address before signing in.';
+  }
+  if (raw.includes('too many requests')) {
+    return 'Too many login attempts. Please wait a moment and try again.';
+  }
+
+  return 'Unable to sign in right now. Please try again.';
+}
+
 // Row mappers
 
 function mapStudentRow(row: any): Student {
@@ -89,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Resolve a Supabase auth session to a full user object by querying role tables
-  const resolveAuthUser = useCallback(async (authEmail: string, expectedRole?: UserRole): Promise<User | null> => {
+  const resolveAuthUser = useCallback(async (authEmail: string): Promise<User | null> => {
     // Try students table
     const { data: student } = await supabase
       .from('students')
@@ -97,7 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('email', authEmail)
       .maybeSingle();
     if (student) {
-      if (expectedRole && expectedRole !== 'student') return null; // Wrong role tab
       return mapStudentRow(student);
     }
 
@@ -108,7 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('email', authEmail)
       .maybeSingle();
     if (faculty) {
-      if (expectedRole && expectedRole !== 'faculty') return null; // Wrong role tab
       return mapFacultyRow(faculty);
     }
 
@@ -119,7 +133,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('email', authEmail)
       .maybeSingle();
     if (admin) {
-      if (expectedRole && expectedRole !== 'admin') return null; // Wrong role tab
       return mapAdminRow(admin);
     }
 
@@ -127,74 +140,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string, role: UserRole) => {
-    setIsLoading(true);
+    const normalizedEmail = email.trim();
+
     try {
       // 1. Authenticate with Supabase (all roles now use real Supabase auth)
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       });
 
       if (authError || !authData.session) {
-        throw new Error(authError?.message || 'Invalid email or password.');
+        throw new Error(normalizeAuthErrorMessage(authError));
       }
 
-      // 2. Look up profile in the right table based on selected role
-      let profile: User | null = null;
+      const authEmail = authData.user?.email?.trim() ?? normalizedEmail;
 
-      if (role === 'student') {
-        const { data, error } = await supabase
-          .from('students')
-          .select('*')
-          .eq('email', email)
-          .maybeSingle();
-        if (error || !data) {
-          await supabase.auth.signOut();
-          throw new Error('No student profile found for this account. Contact your administrator.');
-        }
-        profile = mapStudentRow(data);
-
-      } else if (role === 'faculty') {
-        const { data, error } = await supabase
-          .from('faculty')
-          .select('*')
-          .eq('email', email)
-          .maybeSingle();
-        if (error || !data) {
-          await supabase.auth.signOut();
-          throw new Error('No faculty profile found for this account. Contact your administrator.');
-        }
-        profile = mapFacultyRow(data);
-
-      } else if (role === 'admin') {
-        const { data, error } = await supabase
-          .from('admins')
-          .select('*')
-          .eq('email', email)
-          .maybeSingle();
-        if (error || !data) {
-          await supabase.auth.signOut();
-          throw new Error('No admin profile found for this account. Access denied.');
-        }
-        profile = mapAdminRow(data);
-      }
-
+      // 2. Resolve the authenticated account to an app profile
+      const profile = await resolveAuthUser(authEmail);
       if (!profile) {
         await supabase.auth.signOut();
-        throw new Error('Profile not found. Contact your administrator.');
+        throw new Error('Your account is authenticated but not linked to a portal profile. Contact your administrator.');
       }
 
       // 3. Verify the profile role matches what the user selected on the login screen
       if (profile.role !== role) {
         await supabase.auth.signOut();
-        throw new Error(`This account is registered as a ${profile.role}, not as a ${role}.`);
+        throw new Error('Role mismatch. Please select the correct role and try again.');
       }
 
       setUser(profile);
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      await supabase.auth.signOut().catch(() => { });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Login failed. Please try again.');
     }
-  }, []);
+  }, [resolveAuthUser]);
 
   const logout = useCallback(() => {
     supabase.auth.signOut().catch(() => { });
