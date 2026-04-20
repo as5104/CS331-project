@@ -69,6 +69,28 @@ function generateFacultyEmail(employeeId: string, domain = 'university.edu'): st
     return `${employeeId.toLowerCase().replace(/\s+/g, '')}@${domain}`;
 }
 
+function extractIndianPhoneDigits(value: string): string {
+    const digits = value.replace(/\D/g, '');
+    if (digits.startsWith('91')) {
+        return digits.slice(2, 12);
+    }
+    return digits.slice(0, 10);
+}
+
+function toCanonicalIndianPhone(value: string): string {
+    const digits = extractIndianPhoneDigits(value);
+    return digits.length === 10 ? `+91${digits}` : '';
+}
+
+function toIndianPhoneState(value: string): string {
+    const digits = extractIndianPhoneDigits(value);
+    return digits ? `+91${digits}` : '';
+}
+
+function isValidIndianPhone(value: string): boolean {
+    return toCanonicalIndianPhone(value) !== '';
+}
+
 // Empty Forms
 
 const emptyStudentForm: StudentAdmissionForm = {
@@ -140,6 +162,8 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
     const [facultyEditForm, setFacultyEditForm] = useState<FacultyEditForm | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; role: 'student' | 'faculty'; name: string } | null>(null);
     const [actionLoading, setActionLoading] = useState(false);
+    const studentEditPhoneInvalid = !!studentEditForm?.phone?.trim() && !isValidIndianPhone(studentEditForm.phone);
+    const facultyEditPhoneInvalid = !!facultyEditForm?.phone?.trim() && !isValidIndianPhone(facultyEditForm.phone);
 
     const parseApiPayload = useCallback(async (res: Response): Promise<any> => {
         const contentType = res.headers.get('content-type') || '';
@@ -236,6 +260,11 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
 
     const saveStudentEdit = useCallback(async () => {
         if (!studentEditForm) return;
+        const phone = toCanonicalIndianPhone(studentEditForm.phone);
+        if (studentEditForm.phone.trim() && !phone) {
+            setLoadError('Phone number must be +91 followed by exactly 10 digits.');
+            return;
+        }
         setLoadError(null);
         setActionLoading(true);
         try {
@@ -256,7 +285,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                         department: studentEditForm.department.trim(),
                         semester: Number(studentEditForm.semester),
                         batch_year: studentEditForm.batch_year.trim(),
-                        phone: studentEditForm.phone.trim(),
+                        phone,
                     },
                 }),
             });
@@ -273,6 +302,11 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
 
     const saveFacultyEdit = useCallback(async () => {
         if (!facultyEditForm) return;
+        const phone = toCanonicalIndianPhone(facultyEditForm.phone);
+        if (facultyEditForm.phone.trim() && !phone) {
+            setLoadError('Phone number must be +91 followed by exactly 10 digits.');
+            return;
+        }
         setLoadError(null);
         setActionLoading(true);
         try {
@@ -292,7 +326,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                         department: facultyEditForm.department.trim(),
                         designation: facultyEditForm.designation.trim(),
                         qualification: facultyEditForm.qualification.trim(),
-                        phone: facultyEditForm.phone.trim(),
+                        phone,
                     },
                 }),
             });
@@ -344,10 +378,43 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
         setSubmitResult(null);
 
         const isStudent = modal === 'add-student';
+        if (isStudent) {
+            const phone = toCanonicalIndianPhone(studentForm.phone);
+            const guardianContact = toCanonicalIndianPhone(studentForm.guardianContact);
+            if (!phone) {
+                setSubmitResult({ success: false, message: 'Student phone must be +91 followed by exactly 10 digits.' });
+                setIsSubmitting(false);
+                return;
+            }
+            if (!guardianContact) {
+                setSubmitResult({ success: false, message: 'Guardian contact must be +91 followed by exactly 10 digits.' });
+                setIsSubmitting(false);
+                return;
+            }
+        } else {
+            const phone = toCanonicalIndianPhone(facultyForm.phone);
+            if (!phone) {
+                setSubmitResult({ success: false, message: 'Faculty phone must be +91 followed by exactly 10 digits.' });
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
         try {
             const { data: sessionData } = await supabase.auth.getSession();
             const accessToken = sessionData.session?.access_token;
             if (!accessToken) throw new Error('Session expired. Please sign in again.');
+
+            const studentProfilePayload = {
+                ...studentForm,
+                phone: toCanonicalIndianPhone(studentForm.phone),
+                guardianContact: toCanonicalIndianPhone(studentForm.guardianContact),
+            };
+
+            const facultyProfilePayload = {
+                ...facultyForm,
+                phone: toCanonicalIndianPhone(facultyForm.phone),
+            };
 
             const res = await fetch('/api/create-user', {
                 method: 'POST',
@@ -359,7 +426,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                     email: generatedEmail,
                     password: generatedPassword,
                     role: isStudent ? 'student' : 'faculty',
-                    profile: isStudent ? studentForm : facultyForm,
+                    profile: isStudent ? studentProfilePayload : facultyProfilePayload,
                 }),
             });
             const data = await parseApiPayload(res);
@@ -393,12 +460,12 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
 
     const canProceedFromSection = (): boolean => {
         if (modal === 'add-student') {
-            if (currentSection === 'personal') return !!(studentForm.name && studentForm.dateOfBirth && studentForm.phone && studentForm.gender);
+            if (currentSection === 'personal') return !!(studentForm.name && studentForm.dateOfBirth && studentForm.phone && studentForm.gender) && isValidIndianPhone(studentForm.phone);
             if (currentSection === 'academic') return !!(studentForm.rollNumber && studentForm.program && studentForm.department && studentForm.batchYear);
-            if (currentSection === 'guardian') return !!(studentForm.fatherName && studentForm.motherName && studentForm.guardianContact);
+            if (currentSection === 'guardian') return !!(studentForm.fatherName && studentForm.motherName && studentForm.guardianContact) && isValidIndianPhone(studentForm.guardianContact);
             if (currentSection === 'credentials') return !!(generatedEmail && generatedPassword);
         } else {
-            if (currentSection === 'personal') return !!(facultyForm.name && facultyForm.dateOfBirth && facultyForm.phone);
+            if (currentSection === 'personal') return !!(facultyForm.name && facultyForm.dateOfBirth && facultyForm.phone) && isValidIndianPhone(facultyForm.phone);
             if (currentSection === 'academic') return !!(facultyForm.employeeId && facultyForm.department && facultyForm.designation && facultyForm.qualification && facultyForm.dateOfJoining);
             if (currentSection === 'credentials') return !!(generatedEmail && generatedPassword);
         }
@@ -535,7 +602,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                                                 department: s.department ?? '',
                                                                 semester: Number(s.semester) || 1,
                                                                 batch_year: s.batch_year ?? '',
-                                                                phone: s.phone ?? '',
+                                                                phone: toIndianPhoneState(s.phone ?? ''),
                                                             })}
                                                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted"
                                                         >
@@ -596,7 +663,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                                                 department: f.department ?? '',
                                                                 designation: f.designation ?? '',
                                                                 qualification: f.qualification ?? '',
-                                                                phone: f.phone ?? '',
+                                                                phone: toIndianPhoneState(f.phone ?? ''),
                                                             })}
                                                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted"
                                                         >
@@ -668,7 +735,12 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <Field label="Batch Year *" value={studentEditForm.batch_year} onChange={v => setStudentEditForm({ ...studentEditForm, batch_year: v })} />
-                                        <Field label="Phone" value={studentEditForm.phone} onChange={v => setStudentEditForm({ ...studentEditForm, phone: v })} />
+                                        <div>
+                                            <PhoneInputField label="Phone" value={studentEditForm.phone} onChange={v => setStudentEditForm({ ...studentEditForm, phone: v })} />
+                                            {studentEditPhoneInvalid && (
+                                                <p className="text-xs text-red-600 mt-1">Phone must be +91 followed by exactly 10 digits.</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="p-5 border-t border-border flex gap-3">
@@ -680,7 +752,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                     </button>
                                     <button
                                         onClick={saveStudentEdit}
-                                        disabled={actionLoading}
+                                        disabled={actionLoading || studentEditPhoneInvalid}
                                         className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
                                     >
                                         {actionLoading ? 'Saving...' : 'Save Changes'}
@@ -720,7 +792,12 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                     <Field label="Name *" value={facultyEditForm.name} onChange={v => setFacultyEditForm({ ...facultyEditForm, name: v })} />
                                     <div className="grid grid-cols-2 gap-3">
                                         <Field label="Employee ID *" value={facultyEditForm.employee_id} onChange={v => setFacultyEditForm({ ...facultyEditForm, employee_id: v })} />
-                                        <Field label="Phone" value={facultyEditForm.phone} onChange={v => setFacultyEditForm({ ...facultyEditForm, phone: v })} />
+                                        <div>
+                                            <PhoneInputField label="Phone" value={facultyEditForm.phone} onChange={v => setFacultyEditForm({ ...facultyEditForm, phone: v })} />
+                                            {facultyEditPhoneInvalid && (
+                                                <p className="text-xs text-red-600 mt-1">Phone must be +91 followed by exactly 10 digits.</p>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <SelectField
@@ -747,7 +824,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                                     </button>
                                     <button
                                         onClick={saveFacultyEdit}
-                                        disabled={actionLoading}
+                                        disabled={actionLoading || facultyEditPhoneInvalid}
                                         className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
                                     >
                                         {actionLoading ? 'Saving...' : 'Save Changes'}
@@ -1033,10 +1110,13 @@ function StudentFormSections({
                             options={['Male', 'Female', 'Other']} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <Field label="Phone Number *" value={form.phone} onChange={v => set('phone', v)} placeholder="+91 9XXXXXXXXX" type="tel" />
+                        <PhoneInputField label="Phone Number *" value={form.phone} onChange={v => set('phone', v)} />
                         <SelectField label="Blood Group" value={form.bloodGroup} onChange={v => set('bloodGroup', v)}
                             options={['', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']} />
                     </div>
+                    {form.phone && !isValidIndianPhone(form.phone) && (
+                        <p className="text-xs text-red-600">Phone must be +91 followed by exactly 10 digits.</p>
+                    )}
                 </>
             )}
             {section === 'academic' && (
@@ -1067,7 +1147,10 @@ function StudentFormSections({
                     <SectionHeader icon={Users} title="Guardian Information" />
                     <Field label="Father's Name *" value={form.fatherName} onChange={v => set('fatherName', v)} placeholder="Father's full name" />
                     <Field label="Mother's Name *" value={form.motherName} onChange={v => set('motherName', v)} placeholder="Mother's full name" />
-                    <Field label="Guardian Contact *" value={form.guardianContact} onChange={v => set('guardianContact', v)} placeholder="+91 9XXXXXXXXX" type="tel" />
+                    <PhoneInputField label="Guardian Contact *" value={form.guardianContact} onChange={v => set('guardianContact', v)} />
+                    {form.guardianContact && !isValidIndianPhone(form.guardianContact) && (
+                        <p className="text-xs text-red-600">Guardian contact must be +91 followed by exactly 10 digits.</p>
+                    )}
                     <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-700">
                         <strong>Note:</strong> CGPA and attendance will start at 0. Courses will be assigned by faculty after enrollment.
                     </div>
@@ -1112,7 +1195,10 @@ function FacultyFormSections({
                         <DateField label="Date of Birth *" value={form.dateOfBirth} onChange={v => set('dateOfBirth', v)} />
                         <SelectField label="Gender *" value={form.gender} onChange={v => set('gender', v as any)} options={['Male', 'Female', 'Other']} />
                     </div>
-                    <Field label="Phone Number *" value={form.phone} onChange={v => set('phone', v)} placeholder="+91 9XXXXXXXXX" type="tel" />
+                    <PhoneInputField label="Phone Number *" value={form.phone} onChange={v => set('phone', v)} />
+                    {form.phone && !isValidIndianPhone(form.phone) && (
+                        <p className="text-xs text-red-600">Phone must be +91 followed by exactly 10 digits.</p>
+                    )}
                 </>
             )}
             {section === 'academic' && (
@@ -1220,6 +1306,34 @@ function Field({ label, value, onChange, placeholder = '', type = 'text' }: {
             <label className="block text-sm font-medium mb-1.5">{label}</label>
             <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
                 className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+        </div>
+    );
+}
+
+function PhoneInputField({ label, value, onChange }: {
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+}) {
+    const digits = extractIndianPhoneDigits(value);
+
+    return (
+        <div>
+            <label className="block text-sm font-medium mb-1.5">{label}</label>
+            <div className="flex items-center rounded-xl border border-border bg-muted/50 overflow-hidden transition-all">
+                <span className="px-3 py-2.5 text-sm font-medium text-muted-foreground border-r border-border select-none">+91</span>
+                <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={digits}
+                    onChange={(e) => {
+                        const nextDigits = extractIndianPhoneDigits(e.target.value);
+                        onChange(nextDigits ? `+91${nextDigits}` : '');
+                    }}
+                    placeholder="10-digit number"
+                    className="w-full px-3 py-2.5 bg-transparent text-sm border-0 shadow-none outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:border-0"
+                />
+            </div>
         </div>
     );
 }

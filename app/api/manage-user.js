@@ -25,6 +25,22 @@ const FACULTY_EDITABLE_FIELDS = new Set([
     'phone',
 ]);
 
+function normalizePhone(value) {
+    if (typeof value !== 'string') return '';
+    const rawDigits = value.trim().replace(/\D/g, '');
+    let localDigits = '';
+    if (rawDigits.length === 10) {
+        localDigits = rawDigits;
+    } else if (rawDigits.length === 12 && rawDigits.startsWith('91')) {
+        localDigits = rawDigits.slice(2);
+    }
+    return localDigits ? `+91${localDigits}` : '';
+}
+
+function isValidPhone(value) {
+    return /^\+91\d{10}$/.test(normalizePhone(value));
+}
+
 function normalizeRole(role) {
     if (role === 'student' || role === 'faculty') return role;
     return null;
@@ -208,6 +224,14 @@ export default async function handler(req, res) {
                     return res.status(400).json({ error: 'Semester must be an integer between 1 and 12.' });
                 }
                 updates.semester = value;
+            }
+
+            if (updates.phone !== undefined) {
+                const phone = normalizePhone(updates.phone);
+                if (String(updates.phone).trim() && !phone) {
+                    return res.status(400).json({ error: 'Phone must be +91 followed by exactly 10 digits.' });
+                }
+                updates.phone = phone;
             }
 
             const { error: updateError } = await supabaseAdmin.from(table).update(updates).eq('id', id);
